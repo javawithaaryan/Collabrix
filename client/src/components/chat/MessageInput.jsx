@@ -1,1 +1,3 @@
-﻿export default function MessageInput() { return <div>Message Input</div>; }
+﻿export default function MessageInput() {
+  return <div>Message Input</div>;
+}

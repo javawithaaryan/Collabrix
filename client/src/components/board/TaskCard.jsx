@@ -1,1 +1,3 @@
-﻿export default function TaskCard() { return <article>Task Card</article>; }
+﻿export default function TaskCard() {
+  return <article>Task Card</article>;
+}

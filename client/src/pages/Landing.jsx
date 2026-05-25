@@ -1,1 +1,9 @@
-﻿export default function Landing() { return <div className="min-h-screen flex items-center justify-center">Landing Page</div>; }
+﻿const Landing = () => {
+  return (
+    <div className="p-10 text-4xl">
+      Collabrix Landing
+    </div>
+  );
+};
+
+export default Landing;

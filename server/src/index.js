@@ -2,8 +2,8 @@
 import dotenv from "dotenv";
 
 import app from "./app.js";
-import initSockets from "./sockets/index.js";
 import connectDB from "./config/db.js";
+import initSockets from "./sockets/index.js";
 
 dotenv.config();
 

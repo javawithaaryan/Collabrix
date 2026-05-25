@@ -1,1 +1,27 @@
-﻿import { Routes, Route, Navigate } from "react-router-dom";\nimport Landing from "./pages/Landing";\nimport Login from "./pages/Login";\nimport Register from "./pages/Register";\nimport Dashboard from "./pages/Dashboard";\nimport Workspace from "./pages/Workspace";\nimport Project from "./pages/Project";\nimport NotFound from "./pages/NotFound";\nexport default function AppRoutes() { return ( <Routes> <Route path="/" element={<Landing />} /> <Route path="/login" element={<Login />} /> <Route path="/register" element={<Register />} /> <Route path="/dashboard" element={<Dashboard />} /> <Route path="/workspace" element={<Workspace />} /> <Route path="/project" element={<Project />} /> <Route path="*" element={<NotFound />} /> </Routes> ); }
+import { createBrowserRouter } from "react-router-dom";
+
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Landing />,
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/register",
+    element: <Register />,
+  },
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
+  },
+]);
+
+export default router;

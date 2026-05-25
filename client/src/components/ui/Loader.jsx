@@ -1,1 +1,3 @@
-﻿export default function Loader() { return <div>Loading...</div>; }
+﻿export default function Loader() {
+  return <div className="text-center">Loading...</div>;
+}

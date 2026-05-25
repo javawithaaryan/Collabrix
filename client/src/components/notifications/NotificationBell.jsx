@@ -1,1 +1,3 @@
-﻿export default function NotificationBell() { return <button>Notifications</button>; }
+﻿export default function NotificationBell() {
+  return <button>Notifications</button>;
+}

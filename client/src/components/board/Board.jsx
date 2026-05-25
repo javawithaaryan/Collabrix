@@ -1,1 +1,3 @@
-﻿export default function Board() { return <section>Board</section>; }
+﻿export default function Board() {
+  return <section>Board</section>;
+}

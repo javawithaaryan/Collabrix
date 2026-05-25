@@ -1,1 +1,3 @@
-﻿export default function Column() { return <div>Column</div>; }
+﻿export default function Column() {
+  return <div>Column</div>;
+}

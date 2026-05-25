@@ -1,1 +1,3 @@
-﻿export default function Sidebar() { return <aside>Sidebar</aside>; }
+﻿export default function Sidebar() {
+  return <aside className="border-r p-4">Sidebar</aside>;
+}
