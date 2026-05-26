@@ -13,14 +13,23 @@ import socket from "../socket";
 
 import Sidebar from "../components/Sidebar";
 import ChatPanel from "../components/ChatPanel";
+import ActivityPanel from "../components/ActivityPanel";
 
 const Project = () => {
   const { id } = useParams();
 
   const [tasks, setTasks] = useState([]);
 
+  const [activities, setActivities] = useState([]);
+
+  const [onlineUsers, setOnlineUsers] = useState([]);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+
+  const user = JSON.parse(
+    localStorage.getItem("user")
+  );
 
   const fetchTasks = async () => {
     try {
@@ -59,6 +68,7 @@ const Project = () => {
 
       socket.emit("task-updated", {
         projectId: id,
+        message: `${user.name} created a task`,
       });
 
       setTitle("");
@@ -88,6 +98,7 @@ const Project = () => {
 
       socket.emit("task-updated", {
         projectId: id,
+        message: `${user.name} moved a task to ${status}`,
       });
 
       fetchTasks();
@@ -119,18 +130,38 @@ const Project = () => {
   useEffect(() => {
     fetchTasks();
 
-    socket.emit("join-project", id);
+    socket.emit("join-project", {
+      projectId: id,
+      user,
+    });
 
     socket.on("receive-task-update", () => {
       fetchTasks();
     });
 
+    socket.on("online-users", (users) => {
+      setOnlineUsers(users);
+    });
+
+    socket.on("activity", (activity) => {
+      setActivities((prev) => [
+        activity,
+        ...prev,
+      ]);
+    });
+
     return () => {
       socket.off("receive-task-update");
+      socket.off("online-users");
+      socket.off("activity");
     };
   }, []);
 
-  const renderColumn = (title, columnId, columnTasks) => (
+  const renderColumn = (
+    title,
+    columnId,
+    columnTasks
+  ) => (
     <Droppable droppableId={columnId}>
       {(provided) => (
         <div
@@ -225,7 +256,7 @@ const Project = () => {
         </div>
 
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid xl:grid-cols-4 gap-6">
+          <div className="grid xl:grid-cols-5 gap-6">
             {renderColumn(
               "Todo",
               "todo",
@@ -246,6 +277,13 @@ const Project = () => {
 
             <div className="h-[80vh]">
               <ChatPanel projectId={id} />
+            </div>
+
+            <div className="h-[80vh]">
+              <ActivityPanel
+                activities={activities}
+                onlineUsers={onlineUsers}
+              />
             </div>
           </div>
         </DragDropContext>

@@ -17,11 +17,35 @@ const io = new Server(server, {
   },
 });
 
+const onlineUsers = new Map();
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  socket.on("join-project", (projectId) => {
+  socket.on("join-project", ({ projectId, user }) => {
     socket.join(projectId);
+
+    if (!onlineUsers.has(projectId)) {
+      onlineUsers.set(projectId, []);
+    }
+
+    const users = onlineUsers.get(projectId);
+
+    const alreadyExists = users.find(
+      (u) => u.socketId === socket.id
+    );
+
+    if (!alreadyExists) {
+      users.push({
+        socketId: socket.id,
+        name: user.name,
+      });
+    }
+
+    io.to(projectId).emit(
+      "online-users",
+      onlineUsers.get(projectId)
+    );
   });
 
   socket.on("task-updated", (data) => {
@@ -29,6 +53,11 @@ io.on("connection", (socket) => {
       "receive-task-update",
       data
     );
+
+    io.to(data.projectId).emit("activity", {
+      type: "task",
+      message: data.message,
+    });
   });
 
   socket.on("send-message", (data) => {
@@ -36,9 +65,27 @@ io.on("connection", (socket) => {
       "receive-message",
       data
     );
+
+    io.to(data.projectId).emit("activity", {
+      type: "message",
+      message: data.activity,
+    });
   });
 
   socket.on("disconnect", () => {
+    onlineUsers.forEach((users, projectId) => {
+      const filteredUsers = users.filter(
+        (u) => u.socketId !== socket.id
+      );
+
+      onlineUsers.set(projectId, filteredUsers);
+
+      io.to(projectId).emit(
+        "online-users",
+        filteredUsers
+      );
+    });
+
     console.log("User disconnected:", socket.id);
   });
 });
