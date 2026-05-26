@@ -2,7 +2,11 @@
 import { useParams } from "react-router-dom";
 
 import axios from "../lib/axios";
+
 import socket from "../socket";
+
+import Sidebar from "../components/Sidebar";
+import ChatPanel from "../components/ChatPanel";
 
 const Project = () => {
   const { id } = useParams();
@@ -167,65 +171,77 @@ const Project = () => {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white p-10">
-      <h1 className="text-5xl font-bold mb-10">
-        Project Board
-      </h1>
+    <div className="flex bg-black text-white min-h-screen">
+      <Sidebar />
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-10">
-        <div className="flex flex-col gap-4">
-          <input
-            type="text"
-            placeholder="Task title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="bg-black border border-zinc-800 rounded-xl px-4 py-3 outline-none"
-          />
+      <div className="flex-1 p-8 overflow-y-auto">
+        <h1 className="text-5xl font-bold mb-10">
+          Project Board
+        </h1>
 
-          <textarea
-            placeholder="Task description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="bg-black border border-zinc-800 rounded-xl px-4 py-3 outline-none h-28"
-          />
-
-          <button
-            onClick={createTask}
-            className="bg-white text-black py-3 rounded-xl font-semibold"
-          >
-            Create Task
-          </button>
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5">
-          <h2 className="text-2xl font-bold mb-5">
-            Todo
-          </h2>
-
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-10">
           <div className="flex flex-col gap-4">
-            {todoTasks.map(renderTaskCard)}
+            <input
+              type="text"
+              placeholder="Task title"
+              value={title}
+              onChange={(e) =>
+                setTitle(e.target.value)
+              }
+              className="bg-black border border-zinc-800 rounded-xl px-4 py-3 outline-none"
+            />
+
+            <textarea
+              placeholder="Task description"
+              value={description}
+              onChange={(e) =>
+                setDescription(e.target.value)
+              }
+              className="bg-black border border-zinc-800 rounded-xl px-4 py-3 outline-none h-28"
+            />
+
+            <button
+              onClick={createTask}
+              className="bg-white text-black py-3 rounded-xl font-semibold"
+            >
+              Create Task
+            </button>
           </div>
         </div>
 
-        <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5">
-          <h2 className="text-2xl font-bold mb-5">
-            In Progress
-          </h2>
+        <div className="grid xl:grid-cols-4 gap-6">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5">
+            <h2 className="text-2xl font-bold mb-5">
+              Todo
+            </h2>
 
-          <div className="flex flex-col gap-4">
-            {inProgressTasks.map(renderTaskCard)}
+            <div className="flex flex-col gap-4">
+              {todoTasks.map(renderTaskCard)}
+            </div>
           </div>
-        </div>
 
-        <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5">
-          <h2 className="text-2xl font-bold mb-5">
-            Done
-          </h2>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5">
+            <h2 className="text-2xl font-bold mb-5">
+              In Progress
+            </h2>
 
-          <div className="flex flex-col gap-4">
-            {doneTasks.map(renderTaskCard)}
+            <div className="flex flex-col gap-4">
+              {inProgressTasks.map(renderTaskCard)}
+            </div>
+          </div>
+
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5">
+            <h2 className="text-2xl font-bold mb-5">
+              Done
+            </h2>
+
+            <div className="flex flex-col gap-4">
+              {doneTasks.map(renderTaskCard)}
+            </div>
+          </div>
+
+          <div className="h-[80vh]">
+            <ChatPanel projectId={id} />
           </div>
         </div>
       </div>
