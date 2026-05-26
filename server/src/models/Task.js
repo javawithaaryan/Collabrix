@@ -10,6 +10,7 @@ const taskSchema = new mongoose.Schema(
 
     description: {
       type: String,
+      default: "",
     },
 
     project: {
@@ -20,7 +21,7 @@ const taskSchema = new mongoose.Schema(
 
     workspace: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "workspace",
+      ref: "Workspace",
     },
 
     priority: {
@@ -33,6 +34,22 @@ const taskSchema = new mongoose.Schema(
       type: String,
       enum: ["todo", "in-progress", "done"],
       default: "todo",
+    },
+
+    assignee: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    dueDate: {
+      type: Date,
+      default: null,
+    },
+
+    labels: {
+      type: [String],
+      default: [],
     },
 
     createdBy: {

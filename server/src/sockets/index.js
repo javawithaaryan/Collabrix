@@ -101,6 +101,18 @@ const initSockets = (server) => {
       }
     });
 
+    // ─── Comments ─────────────────────────────────────────────────────
+    socket.on("task-comment-added", ({ projectId, taskId, comment, actorName, taskTitle }) => {
+      if (!projectId || !taskId || !comment) return;
+      // Broadcast to other users who have the task details pane open
+      socket.to(projectId).emit("comment:new", { taskId, comment });
+      io.to(projectId).emit("activity:new", {
+        type: "message_sent",
+        message: `${actorName || "Someone"} commented on "${taskTitle || "a task"}": "${comment.text.substring(0, 30)}..."`,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
     // ─── Chat ─────────────────────────────────────────────────────────
     socket.on("send-message", ({ projectId, message }) => {
       if (!projectId || !message) return;
