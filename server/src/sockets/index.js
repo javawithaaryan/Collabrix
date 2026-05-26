@@ -58,6 +58,7 @@ const initSockets = (server) => {
       io.to(projectId).emit("activity:new", {
         type: "task_created",
         message: `${actorName || "Someone"} created "${task?.title || "a task"}"`,
+        taskId: task?._id,
         timestamp: new Date().toISOString(),
       });
     });
@@ -68,6 +69,7 @@ const initSockets = (server) => {
       io.to(projectId).emit("activity:new", {
         type: "task_moved",
         message: `${actorName || "Someone"} moved "${taskTitle || "a task"}" to ${newStatus}`,
+        taskId,
         timestamp: new Date().toISOString(),
       });
     });
@@ -78,6 +80,7 @@ const initSockets = (server) => {
       io.to(projectId).emit("activity:new", {
         type: "task_completed",
         message: `${actorName || "Someone"} completed "${taskTitle || "a task"}" ✓`,
+        taskId,
         timestamp: new Date().toISOString(),
       });
     });
@@ -114,6 +117,7 @@ const initSockets = (server) => {
       io.to(projectId).emit("activity:new", {
         type: "message_sent",
         message: `${actorName || "Someone"} commented on "${taskTitle || "a task"}": "${comment.text.substring(0, 30)}..."`,
+        taskId,
         timestamp: new Date().toISOString(),
       });
     });

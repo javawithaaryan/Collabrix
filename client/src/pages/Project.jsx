@@ -676,7 +676,11 @@ const Project = () => {
               </div>
 
               <div className="h-[70vh]">
-                <ActivityPanel activities={activities} onlineUsers={onlineUsers} />
+                <ActivityPanel
+                  activities={activities}
+                  onlineUsers={onlineUsers}
+                  onTaskClick={(taskId) => setSelectedTaskId(taskId)}
+                />
               </div>
             </div>
           </DragDropContext>
