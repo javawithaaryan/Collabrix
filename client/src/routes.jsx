@@ -4,6 +4,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import NotFound from "./pages/NotFound";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -30,6 +31,11 @@ const router = createBrowserRouter([
         <Dashboard />
       </ProtectedRoute>
     ),
+  },
+
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ]);
 

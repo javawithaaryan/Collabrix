@@ -1,12 +1,9 @@
 ﻿import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import API from "../lib/axios";
 
-import { useAuth } from "../context/AuthContext";
-
-const Login = () => {
+function Login() {
   const navigate = useNavigate();
-
-  const { login } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -14,81 +11,109 @@ const Login = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleChange = (event) => {
-    setFormData({
-      ...formData,
-      [event.target.name]: event.target.value,
-    });
+  const handleChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setError("");
+    setLoading(true);
 
     try {
-      setLoading(true);
+      const response = await API.post("/auth/login", formData);
 
-      await login(formData);
+      localStorage.setItem("token", response.data.token);
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(response.data.user)
+      );
 
       navigate("/dashboard");
     } catch (error) {
-      console.error(error);
-      alert("Login failed");
+      setError(
+        error.response?.data?.message || "Login failed"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md bg-slate-900 p-8 rounded-2xl border border-slate-800"
-      >
-        <h1 className="text-3xl font-bold mb-6">
+    <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
+      <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+        <h1 className="text-4xl font-bold mb-8">
           Login
         </h1>
 
-        <div className="mb-4">
-          <label className="block mb-2 text-sm">
-            Email
-          </label>
-
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="you@example.com"
-            className="w-full p-3 rounded-lg bg-slate-800 border border-slate-700 outline-none"
-          />
-        </div>
-
-        <div className="mb-6">
-          <label className="block mb-2 text-sm">
-            Password
-          </label>
-
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="••••••••"
-            className="w-full p-3 rounded-lg bg-slate-800 border border-slate-700 outline-none"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-white text-black py-3 rounded-lg font-semibold"
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5"
         >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+          <div>
+            <label className="block text-sm text-zinc-400 mb-2">
+              Email
+            </label>
+
+            <input
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-zinc-400 mb-2">
+              Password
+            </label>
+
+            <input
+              type="password"
+              name="password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 outline-none"
+            />
+          </div>
+
+          {error && (
+            <p className="text-red-500 text-sm">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-white text-black py-3 rounded-xl font-semibold hover:opacity-90 transition"
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        <p className="text-zinc-500 text-sm mt-6 text-center">
+          Don’t have an account?{" "}
+          <Link
+            to="/register"
+            className="text-white hover:underline"
+          >
+            Register
+          </Link>
+        </p>
+      </div>
     </div>
   );
-};
+}
 
 export default Login;
