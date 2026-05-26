@@ -1,1 +1,14 @@
-﻿import { Router } from "express";\nimport { getTasks } from "../controllers/taskController.js";\nconst router = Router();\nrouter.get("/", getTasks);\nexport default router;
+﻿import express from "express";
+import {
+  createTask,
+  getTasks,
+} from "../controllers/taskController.js";
+
+import authMiddleware from "../middleware/auth.js";
+
+const router = express.Router();
+
+router.post("/", authMiddleware, createTask);
+router.get("/", authMiddleware, getTasks);
+
+export default router;

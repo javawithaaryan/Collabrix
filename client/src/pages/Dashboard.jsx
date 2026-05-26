@@ -1,35 +1,44 @@
 ﻿import { useEffect, useState } from "react";
-import API from "../lib/axios";
+import axios from "../lib/axios";
 
-function Dashboard() {
-  const [workspaces, setWorkspaces] = useState([]);
+const Dashboard = () => {
   const [workspaceName, setWorkspaceName] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [workspaces, setWorkspaces] = useState([]);
 
   const fetchWorkspaces = async () => {
     try {
-      const response = await API.get("/workspaces");
-      setWorkspaces(response.data);
+      const token = localStorage.getItem("token");
+
+      const res = await axios.get("/workspaces", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setWorkspaces(res.data);
     } catch (error) {
       console.log(error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const createWorkspace = async (e) => {
-    e.preventDefault();
-
-    if (!workspaceName.trim()) return;
-
+  const createWorkspace = async () => {
     try {
-      const response = await API.post("/workspaces", {
-        name: workspaceName,
-      });
+      const token = localStorage.getItem("token");
 
-      setWorkspaces((prev) => [response.data, ...prev]);
+      await axios.post(
+        "/workspaces",
+        {
+          name: workspaceName,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       setWorkspaceName("");
+      fetchWorkspaces();
     } catch (error) {
       console.log(error);
     }
@@ -40,63 +49,50 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-10">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-4xl font-bold mb-2">
-          Welcome to Collabrix
-        </h1>
+    <div className="min-h-screen bg-black text-white p-10">
+      <h1 className="text-5xl font-bold mb-2">
+        Welcome to Collabrix
+      </h1>
 
-        <p className="text-zinc-400 mb-10">
-          Your developer collaboration workspace
-        </p>
+      <p className="text-zinc-400 mb-10">
+        Your developer collaboration workspace
+      </p>
 
-        <form
-          onSubmit={createWorkspace}
-          className="flex gap-4 mb-10"
+      <div className="flex gap-4 mb-10">
+        <input
+          type="text"
+          placeholder="Enter workspace name"
+          value={workspaceName}
+          onChange={(e) => setWorkspaceName(e.target.value)}
+          className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 outline-none"
+        />
+
+        <button
+          onClick={createWorkspace}
+          className="bg-white text-black px-8 rounded-xl font-semibold"
         >
-          <input
-            type="text"
-            placeholder="Enter workspace name"
-            value={workspaceName}
-            onChange={(e) => setWorkspaceName(e.target.value)}
-            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 outline-none"
-          />
+          Create
+        </button>
+      </div>
 
-          <button
-            type="submit"
-            className="bg-white text-black px-6 py-3 rounded-xl font-medium"
+      <div className="grid md:grid-cols-2 gap-5">
+        {workspaces.map((workspace) => (
+          <div
+            key={workspace._id}
+            className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6"
           >
-            Create
-          </button>
-        </form>
+            <h2 className="text-2xl font-semibold">
+              {workspace.name}
+            </h2>
 
-        {loading ? (
-          <p className="text-zinc-500">Loading workspaces...</p>
-        ) : workspaces.length === 0 ? (
-          <p className="text-zinc-500">
-            No workspaces created yet.
-          </p>
-        ) : (
-          <div className="grid gap-4">
-            {workspaces.map((workspace) => (
-              <div
-                key={workspace._id}
-                className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5"
-              >
-                <h2 className="text-xl font-semibold">
-                  {workspace.name}
-                </h2>
-
-                <p className="text-zinc-500 text-sm mt-1">
-                  Workspace ID: {workspace._id}
-                </p>
-              </div>
-            ))}
+            <p className="text-zinc-500 mt-2 text-sm">
+              Workspace ID: {workspace._id}
+            </p>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
-}
+};
 
 export default Dashboard;
