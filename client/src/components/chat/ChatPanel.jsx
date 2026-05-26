@@ -134,12 +134,33 @@ export default function ChatPanel({ projectId }) {
       });
     };
 
+    const onPresenceStatus = ({ name, type }) => {
+      if (name === user.name) return; // ignore self system messages
+      setMessages((prev) => [
+        ...prev,
+        {
+          _id: `sys-${Date.now()}-${Math.random()}`,
+          text: `${name} ${type === "join" ? "joined the sprint board" : "left the sprint board"}`,
+          isSystem: true,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    };
+
+    const onConnect = () => {
+      fetchMessages();
+    };
+
     socket.on("receive-message", onMessage);
     socket.on("user-typing", onTyping);
+    socket.on("presence-status", onPresenceStatus);
+    socket.on("connect", onConnect);
 
     return () => {
       socket.off("receive-message", onMessage);
       socket.off("user-typing", onTyping);
+      socket.off("presence-status", onPresenceStatus);
+      socket.off("connect", onConnect);
       stopTyping();
       clearTimeout(typingTimeoutRef.current);
     };
@@ -203,6 +224,16 @@ export default function ChatPanel({ projectId }) {
             prevMsg &&
             (prevMsg.sender?._id || prevMsg.sender) === (msg.sender?._id || msg.sender) &&
             new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 180000;
+
+          if (msg.isSystem) {
+            return (
+              <div key={msg._id} className="flex justify-center my-1.5 select-none">
+                <span className="text-[10px] text-zinc-500 bg-zinc-900/25 border border-zinc-900/50 rounded-full px-3 py-1 font-sans">
+                  ⚡ {msg.text}
+                </span>
+              </div>
+            );
+          }
 
           return (
             <div

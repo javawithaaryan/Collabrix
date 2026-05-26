@@ -34,11 +34,16 @@ const initSockets = (server) => {
         userId: user.id || user._id,
       });
 
+      socket.to(projectId).emit("presence-status", { name: user.name || "Someone", type: "join" });
       broadcastPresence(io, projectId);
     });
 
     // ─── Leave a project room explicitly ──────────────────────────────
     socket.on("leave-project", ({ projectId }) => {
+      const userData = presence[projectId]?.get(socket.id);
+      if (userData) {
+        socket.to(projectId).emit("presence-status", { name: userData.name, type: "leave" });
+      }
       socket.leave(projectId);
       removeFromPresence(socket.id, projectId);
       broadcastPresence(io, projectId);
@@ -135,6 +140,10 @@ const initSockets = (server) => {
     socket.on("disconnect", (reason) => {
       const projectId = socketToProject[socket.id];
       if (projectId) {
+        const userData = presence[projectId]?.get(socket.id);
+        if (userData) {
+          socket.to(projectId).emit("presence-status", { name: userData.name, type: "leave" });
+        }
         removeFromPresence(socket.id, projectId);
         broadcastPresence(io, projectId);
         delete socketToProject[socket.id];
