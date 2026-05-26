@@ -95,21 +95,43 @@ const Workspace = () => {
         )}
 
         {loading ? (
-          <p className="text-zinc-500">Loading projects...</p>
+          <div className="flex items-center gap-3 text-zinc-500">
+            <span className="w-5 h-5 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
+            <span>Loading projects...</span>
+          </div>
         ) : projects.length === 0 ? (
-          <p className="text-zinc-500">No projects yet. Create one above.</p>
+          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8 text-center max-w-4xl">
+            <span className="text-3xl mb-3 block">🚀</span>
+            <p className="text-zinc-500 text-sm">No projects yet. Create one above to get started.</p>
+          </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-5">
             {projects.map((project) => (
               <div
                 key={project._id}
                 onClick={() => navigate(`/project/${project._id}`)}
-                className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 cursor-pointer hover:border-zinc-600 transition"
+                className="group relative bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-6 cursor-pointer transition flex flex-col justify-between min-h-[140px]"
               >
-                <h2 className="text-2xl font-semibold">{project.name}</h2>
-                {project.description && (
-                  <p className="text-zinc-400 mt-3 text-sm">{project.description}</p>
-                )}
+                <div>
+                  <div className="flex justify-between items-start">
+                    <h2 className="text-lg font-bold group-hover:text-white transition tracking-tight text-zinc-300">
+                      {project.name}
+                    </h2>
+                    <span className="text-zinc-700 group-hover:text-zinc-400 transition text-sm">
+                      →
+                    </span>
+                  </div>
+                  {project.description && (
+                    <p className="text-zinc-500 mt-2 text-xs line-clamp-2 leading-relaxed">
+                      {project.description}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center justify-between border-t border-zinc-900 pt-4 mt-4">
+                  <span className="flex items-center gap-1.5 bg-zinc-900/60 text-zinc-400 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border border-zinc-850 group-hover:bg-zinc-800 transition">
+                    Active Board
+                  </span>
+                </div>
               </div>
             ))}
           </div>
