@@ -43,6 +43,17 @@ const Project = () => {
   // Selected task for editing/details view
   const [selectedTaskId, setSelectedTaskId] = useState(null);
 
+  // Real-time toast notifications list
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = useCallback((message, icon = "⚡") => {
+    const toastId = Date.now() + Math.random().toString(36).substr(2, 9);
+    setToasts((prev) => [...prev, { id: toastId, message, icon }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== toastId));
+    }, 4500);
+  }, []);
+
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   // ─── Data fetching ────────────────────────────────────────────────────
@@ -222,20 +233,44 @@ const Project = () => {
       if (!task) return;
       setTasks((prev) => {
         const exists = prev.some((t) => t._id === task._id);
-        return exists ? prev : [task, ...prev];
+        if (!exists) {
+          triggerToast(`New task created: "${task.title}"`, "✨");
+          return [task, ...prev];
+        }
+        return prev;
       });
     };
 
     // When someone else moves a task
     const onTaskMoved = ({ taskId, newStatus }) => {
       if (!taskId || !newStatus) return;
-      setTasks((prev) =>
-        prev.map((t) => (t._id === taskId ? { ...t, status: newStatus } : t))
-      );
+      setTasks((prev) => {
+        const task = prev.find((t) => t._id === taskId);
+        if (task && task.status !== newStatus) {
+          triggerToast(`Task "${task.title}" moved to ${newStatus}`, "→");
+        }
+        return prev.map((t) => (t._id === taskId ? { ...t, status: newStatus } : t));
+      });
+    };
+
+    // Real-time toast notifications for comments and chat messages
+    const onNewComment = ({ comment }) => {
+      if (comment && comment.sender?._id !== user.id) {
+        triggerToast(`New comment by ${comment.sender?.name}: "${comment.text.substring(0, 25)}..."`, "💬");
+      }
+    };
+
+    const onReceiveMessage = (message) => {
+      if (message && message.sender?._id !== user.id) {
+        triggerToast(`New message from ${message.sender?.name || "Team"}: "${message.text.substring(0, 25)}..."`, "💬");
+      }
     };
 
     // Bulk refetch (e.g. after AI generation from another user)
-    const onBulkUpdate = () => fetchTasks();
+    const onBulkUpdate = () => {
+      triggerToast("AI generated new task options for the project", "✨");
+      fetchTasks();
+    };
 
     // Legacy event support
     const onLegacyUpdate = () => fetchTasks();
@@ -257,6 +292,8 @@ const Project = () => {
     socket.on("disconnect", onDisconnect);
     socket.on("task:created", onTaskCreated);
     socket.on("task:moved", onTaskMoved);
+    socket.on("comment:new", onNewComment);
+    socket.on("receive-message", onReceiveMessage);
     socket.on("task:bulk-update", onBulkUpdate);
     socket.on("receive-task-update", onLegacyUpdate); // legacy
     socket.on("online-users", onOnlineUsers);
@@ -270,6 +307,8 @@ const Project = () => {
       socket.off("disconnect", onDisconnect);
       socket.off("task:created", onTaskCreated);
       socket.off("task:moved", onTaskMoved);
+      socket.off("comment:new", onNewComment);
+      socket.off("receive-message", onReceiveMessage);
       socket.off("task:bulk-update", onBulkUpdate);
       socket.off("receive-task-update", onLegacyUpdate);
       socket.off("online-users", onOnlineUsers);
@@ -535,6 +574,28 @@ const Project = () => {
             onTaskUpdated={fetchTasks}
           />
         )}
+
+        {/* Floating Toast Notifications Container */}
+        <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm pointer-events-none">
+          <style>{`
+            @keyframes slideIn {
+              from { transform: translateX(120%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+            }
+            .animate-slide-in {
+              animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+          `}</style>
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              className="bg-zinc-950/95 border border-zinc-850 text-white rounded-2xl p-4 shadow-2xl backdrop-blur-md flex items-start gap-3 w-80 animate-slide-in pointer-events-auto hover:border-zinc-700 transition duration-300"
+            >
+              <span className="text-base select-none mt-0.5">{t.icon}</span>
+              <p className="text-xs text-zinc-300 leading-relaxed font-sans flex-1 break-words">{t.message}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
