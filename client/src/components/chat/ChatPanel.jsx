@@ -194,16 +194,28 @@ export default function ChatPanel({ projectId }) {
           </div>
         ) : null}
 
-        {messages.map((msg) => {
-          const isMe = msg.sender?._id === user.id;
+        {messages.map((msg, index) => {
+          const isMe = msg.sender?._id === user.id || msg.sender === user.id;
+          const prevMsg = index > 0 ? messages[index - 1] : null;
+
+          // Group messages from same sender within 3 minutes
+          const isGrouped =
+            prevMsg &&
+            (prevMsg.sender?._id || prevMsg.sender) === (msg.sender?._id || msg.sender) &&
+            new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 180000;
+
           return (
             <div
               key={msg._id}
-              className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+              className={`flex flex-col ${isMe ? "items-end" : "items-start"} ${
+                isGrouped ? "-mt-1" : "mt-2.5"
+              }`}
             >
-              <span className="text-zinc-500 text-[10px] mb-1 font-mono px-1">
-                {msg.sender?.name || "Unknown"} · {formatTime(msg.createdAt)}
-              </span>
+              {!isGrouped && (
+                <span className="text-zinc-500 text-[10px] mb-1 font-mono px-1">
+                  {msg.sender?.name || "Unknown"} · {formatTime(msg.createdAt)}
+                </span>
+              )}
               <div
                 className={`px-3.5 py-2 rounded-2xl text-xs max-w-[85%] break-words leading-relaxed ${
                   msg._failed
@@ -211,8 +223,12 @@ export default function ChatPanel({ projectId }) {
                     : msg._temp
                     ? "bg-zinc-800 text-zinc-400 border border-zinc-700 opacity-70"
                     : isMe
-                    ? "bg-white text-black font-semibold rounded-tr-sm shadow-sm"
-                    : "bg-zinc-900 text-zinc-200 border border-zinc-850 rounded-tl-sm"
+                    ? `bg-white text-black font-semibold rounded-tr-sm shadow-sm ${
+                        isGrouped ? "rounded-br-sm" : ""
+                      }`
+                    : `bg-zinc-900 text-zinc-200 border border-zinc-850 rounded-tl-sm ${
+                        isGrouped ? "rounded-bl-sm" : ""
+                      }`
                 }`}
               >
                 {msg.text}
