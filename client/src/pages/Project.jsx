@@ -43,6 +43,11 @@ const Project = () => {
   // Selected task for editing/details view
   const [selectedTaskId, setSelectedTaskId] = useState(null);
 
+  // Real-time task search & filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all"); // "all", "high", "medium", "low"
+  const [assigneeFilter, setAssigneeFilter] = useState("all"); // "all", "me", "unassigned"
+
   // Real-time toast notifications list
   const [toasts, setToasts] = useState([]);
 
@@ -209,10 +214,29 @@ const Project = () => {
     }
   };
 
+  // Filter tasks in real-time based on search and filters
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (task.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (task.labels || []).some((l) => l.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter;
+
+    let matchesAssignee = true;
+    if (assigneeFilter === "me") {
+      matchesAssignee = task.assignee?._id === user.id || task.assignee === user.id;
+    } else if (assigneeFilter === "unassigned") {
+      matchesAssignee = !task.assignee;
+    }
+
+    return matchesSearch && matchesPriority && matchesAssignee;
+  });
+
   const groupedTasks = {
-    todo: tasks.filter((t) => t.status === "todo"),
-    "in-progress": tasks.filter((t) => t.status === "in-progress"),
-    done: tasks.filter((t) => t.status === "done"),
+    todo: filteredTasks.filter((t) => t.status === "todo"),
+    "in-progress": filteredTasks.filter((t) => t.status === "in-progress"),
+    done: filteredTasks.filter((t) => t.status === "done"),
   };
 
   // ─── Socket setup ─────────────────────────────────────────────────────
@@ -557,6 +581,82 @@ const Project = () => {
             </p>
           )}
         </div>
+
+        {/* Board Search & Filter Toolbar */}
+        {!loading && (
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-zinc-950/20 border border-zinc-900/60 rounded-2xl p-4 mb-6">
+            <div className="flex flex-1 items-center gap-2 max-w-md bg-zinc-900/40 border border-zinc-850/80 rounded-xl px-3 py-2">
+              <span className="text-zinc-600 text-xs select-none">🔍</span>
+              <input
+                type="text"
+                placeholder="Filter board by title, desc, or label..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent text-xs text-zinc-350 outline-none w-full placeholder-zinc-700 font-sans"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="text-zinc-650 hover:text-zinc-400 text-xs transition"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Priority Filter */}
+              <div className="flex items-center gap-1.5 border-r border-zinc-900/80 pr-4 mr-1">
+                <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider select-none mr-1">Priority:</span>
+                {["all", "high", "medium", "low"].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPriorityFilter(p)}
+                    className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded transition ${
+                      priorityFilter === p
+                        ? "bg-white text-black"
+                        : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              {/* Assignee Filter */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider select-none mr-1">Assignee:</span>
+                {["all", "me", "unassigned"].map((a) => (
+                  <button
+                    key={a}
+                    onClick={() => setAssigneeFilter(a)}
+                    className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded transition ${
+                      assigneeFilter === a
+                        ? "bg-white text-black"
+                        : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
+                    }`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+
+              {/* Clear filters trigger */}
+              {(searchQuery || priorityFilter !== "all" || assigneeFilter !== "all") && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setPriorityFilter("all");
+                    setAssigneeFilter("all");
+                  }}
+                  className="text-red-400 hover:text-red-300 text-[9px] uppercase font-extrabold tracking-wider pl-4 border-l border-zinc-900 transition"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Kanban + panels */}
         {loading ? (
