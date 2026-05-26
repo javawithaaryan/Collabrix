@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "../lib/axios";
 
@@ -68,7 +68,7 @@ function Login() {
               placeholder="you@example.com"
               value={formData.email}
               onChange={handleChange}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 outline-none"
+              className="w-full bg-zinc-850 border border-zinc-800 rounded-xl px-4 py-3 outline-none focus:border-zinc-650 transition text-sm text-white"
             />
           </div>
 
@@ -83,7 +83,7 @@ function Login() {
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 outline-none"
+              className="w-full bg-zinc-850 border border-zinc-800 rounded-xl px-4 py-3 outline-none focus:border-zinc-650 transition text-sm text-white"
             />
           </div>
 
