@@ -228,7 +228,15 @@ const Project = () => {
       <Sidebar />
 
       <div className="flex-1 p-8 overflow-y-auto">
-        <h1 className="text-4xl font-bold mb-8">Project Board</h1>
+        <div className="flex justify-between items-center mb-8 border-b border-zinc-900 pb-5">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">Project Board</h1>
+            <p className="text-zinc-500 text-sm mt-1">Plan sprints, create tasks manually or generate with Gemini AI.</p>
+          </div>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-full px-4.5 py-1.5 text-xs text-zinc-400 font-mono">
+            Room ID: {id.slice(-6)}
+          </div>
+        </div>
 
         {/* Manual task creation */}
         <div className="bg-zinc-950/40 border border-zinc-800 rounded-2xl p-6 mb-6">
