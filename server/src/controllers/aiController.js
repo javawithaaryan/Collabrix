@@ -100,6 +100,17 @@ export const generateTasks = async (req, res) => {
     });
   }
 
+  // Gracefully handle missing or unconfigured API keys (startup MVP safety)
+  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "your_gemini_api_key_here") {
+    console.warn("AI task generation called but GEMINI_API_KEY is not configured. Using fallback engine.");
+    return res.status(200).json({
+      success: true,
+      isFallback: true,
+      fallbackReason: "AI API key not configured",
+      result: buildFallbackTasks(prompt),
+    });
+  }
+
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
