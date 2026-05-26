@@ -2,6 +2,7 @@
 import { useParams } from "react-router-dom";
 
 import axios from "../lib/axios";
+import socket from "../socket";
 
 const Project = () => {
   const { id } = useParams();
@@ -46,6 +47,10 @@ const Project = () => {
         }
       );
 
+      socket.emit("task-updated", {
+        projectId: id,
+      });
+
       setTitle("");
       setDescription("");
 
@@ -71,6 +76,10 @@ const Project = () => {
         }
       );
 
+      socket.emit("task-updated", {
+        projectId: id,
+      });
+
       fetchTasks();
     } catch (error) {
       console.log(error);
@@ -91,6 +100,16 @@ const Project = () => {
 
   useEffect(() => {
     fetchTasks();
+
+    socket.emit("join-project", id);
+
+    socket.on("receive-task-update", () => {
+      fetchTasks();
+    });
+
+    return () => {
+      socket.off("receive-task-update");
+    };
   }, []);
 
   const renderTaskCard = (task) => (
