@@ -9,6 +9,82 @@ function formatTime(dateStr) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+// Parses and renders a rich visual card if message contains task links, snippets, wiki pages, or images
+function renderAttachmentPreview(text) {
+  if (!text) return null;
+
+  // 1. Image URL preview
+  const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i;
+  const imageMatch = text.match(imageRegex);
+  if (imageMatch) {
+    return (
+      <div className="mt-1.5 rounded-xl overflow-hidden border border-zinc-900 max-w-xs max-h-40 bg-zinc-950 flex items-center select-none shadow">
+        <img src={imageMatch[1]} alt="Preview" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+
+  // 2. Task link preview
+  if (text.includes("/project/") && text.includes("task=")) {
+    const taskTitleMatch = text.match(/\*\*"([^"]+)"\*\*/);
+    const taskTitle = taskTitleMatch ? taskTitleMatch[1] : "Active Engineering Task";
+    return (
+      <div className="mt-1.5 p-3 bg-indigo-950/15 border border-indigo-900/30 rounded-xl flex items-center gap-2.5 max-w-xs font-mono text-[10px] text-indigo-300">
+        <span className="text-xs">📋</span>
+        <div className="min-w-0 flex-1">
+          <span className="text-[8px] text-zinc-550 uppercase block font-bold tracking-wider">Connected Task</span>
+          <span className="font-bold truncate block">{taskTitle}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Snippet reference preview
+  if (text.toLowerCase().includes("snippet") || text.includes("/snippets")) {
+    return (
+      <div className="mt-1.5 p-3 bg-zinc-900/40 border border-zinc-850/80 rounded-xl flex items-center gap-2.5 max-w-xs font-mono text-[10px] text-zinc-350">
+        <span className="text-xs">💻</span>
+        <div className="min-w-0 flex-1">
+          <span className="text-[8px] text-zinc-550 uppercase block font-bold tracking-wider">Snippet Ledger</span>
+          <span className="font-bold truncate block">Auth Grace-Period JWT Rotation</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. Wiki reference preview
+  if (text.toLowerCase().includes("wiki") || text.includes("/wiki")) {
+    return (
+      <div className="mt-1.5 p-3 bg-zinc-900/40 border border-zinc-850/80 rounded-xl flex items-center gap-2.5 max-w-xs font-mono text-[10px] text-zinc-350">
+        <span className="text-xs">📖</span>
+        <div className="min-w-0 flex-1">
+          <span className="text-[8px] text-zinc-550 uppercase block font-bold tracking-wider">Wiki Blueprint</span>
+          <span className="font-bold truncate block">Multiplayer State Sync Architecture</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 5. External Link Preview
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const urlMatch = text.match(urlRegex);
+  if (urlMatch && !urlMatch[0].includes("onrender.com") && !urlMatch[0].includes("localhost")) {
+    const url = urlMatch[0];
+    const domain = url.replace("https://", "").replace("http://", "").split("/")[0];
+    return (
+      <div className="mt-1.5 p-3 bg-zinc-900/20 border border-zinc-900 rounded-xl flex items-center gap-2 max-w-xs font-mono text-[10px] text-zinc-400">
+        <span className="text-xs">🔗</span>
+        <div className="min-w-0 flex-1">
+          <span className="text-[8px] text-zinc-550 uppercase block font-bold tracking-wider">{domain}</span>
+          <span className="truncate block text-zinc-300 font-semibold">{url}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default function ChatPanel({ projectId, parentTypingUsers = [] }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
@@ -450,6 +526,7 @@ export default function ChatPanel({ projectId, parentTypingUsers = [] }) {
                   })}
                 </div>
               )}
+              {!msg.isSystem && renderAttachmentPreview(msg.text)}
             </div>
           );
         })}

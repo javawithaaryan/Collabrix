@@ -23,7 +23,7 @@ export default function Pulse() {
       setEvents(res.data.events || []);
       setInsight(res.data.temporalInsight || "");
     } catch (err) {
-      console.error("Failed to load pulse timeline:", err.message);
+      console.error("Failed to load Engineer’s Space:", err.message);
     } finally {
       setLoading(false);
     }

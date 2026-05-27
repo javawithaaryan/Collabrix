@@ -44,7 +44,7 @@ const PLANS = [
       "15 team members",
       "2,500 AI credits / month",
       "Priority support",
-      "Advanced analytics & Pulse",
+      "Advanced analytics & Engineer’s Space",
       "Custom integrations",
       "Code review AI assist",
     ],
