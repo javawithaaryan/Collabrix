@@ -11,8 +11,8 @@ const socketToWorkspace = {};
 const initSockets = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL || "*",
-      methods: ["GET", "POST"],
+      origin: process.env.CLIENT_URL,
+      credentials: true,
     },
     // Ping timeout/interval for detecting stale connections faster
     pingTimeout: 20000,
