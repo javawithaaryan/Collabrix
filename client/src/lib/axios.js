@@ -1,9 +1,8 @@
-import axios from "axios";
+﻿import axios from "axios";
 
 const API = axios.create({
   baseURL:
-    import.meta.env.VITE_API_URL ||
-    "http://localhost:4000/api",
+    import.meta.env.VITE_API_URL,
 
   headers: {
     "Content-Type": "application/json",
@@ -14,18 +13,26 @@ const API = axios.create({
 
 /*
 |--------------------------------------------------------------------------
-| Automatically attach auth token
+| Attach auth token automatically
 |--------------------------------------------------------------------------
 */
 
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+API.interceptors.request.use(
+  (config) => {
+    const token =
+      localStorage.getItem("token");
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      config.headers.Authorization =
+        `Bearer ${token}`;
+    }
+
+    return config;
+  },
+
+  (error) => {
+    return Promise.reject(error);
   }
-
-  return config;
-});
+);
 
 export default API;
