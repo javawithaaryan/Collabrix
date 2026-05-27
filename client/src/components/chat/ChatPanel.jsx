@@ -209,6 +209,19 @@ export default function ChatPanel({ projectId, parentTypingUsers = [] }) {
       ]);
     };
 
+    const onActivityNew = (activity) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          _id: `sys-${Date.now()}-${Math.random()}`,
+          text: activity.message,
+          type: activity.type,
+          isSystem: true,
+          createdAt: activity.timestamp || new Date().toISOString(),
+        },
+      ]);
+    };
+
     const onConnect = () => {
       fetchMessages();
     };
@@ -216,16 +229,19 @@ export default function ChatPanel({ projectId, parentTypingUsers = [] }) {
     socket.on("receive-message", onMessage);
     socket.on("receive-message-reaction", onMessageReaction);
     socket.on("presence-status", onPresenceStatus);
+    socket.on("activity:new", onActivityNew);
     socket.on("connect", onConnect);
 
     return () => {
       socket.off("receive-message", onMessage);
       socket.off("receive-message-reaction", onMessageReaction);
       socket.off("presence-status", onPresenceStatus);
+      socket.off("activity:new", onActivityNew);
       socket.off("connect", onConnect);
       stopTyping();
       clearTimeout(typingTimeoutRef.current);
     };
+
   }, [projectId]);
 
   // Scroll to bottom on new messages
@@ -302,10 +318,23 @@ export default function ChatPanel({ projectId, parentTypingUsers = [] }) {
             new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 180000;
 
           if (msg.isSystem) {
+            let icon = "⚡";
+            let colorClass = "text-zinc-500 bg-zinc-900/30 border-zinc-900/60";
+            if (msg.type === "task_completed") {
+              icon = "✓";
+              colorClass = "text-emerald-400 bg-emerald-950/20 border-emerald-900/30";
+            } else if (msg.type === "ai_generated") {
+              icon = "✨";
+              colorClass = "text-violet-400 bg-violet-950/20 border-violet-900/30";
+            } else if (msg.type === "resource_shared" || msg.type === "collection_created") {
+              icon = "📔";
+              colorClass = "text-indigo-400 bg-indigo-950/20 border-indigo-900/30";
+            }
             return (
-              <div key={msg._id} className="flex justify-center my-1 select-none animate-chat-in">
-                <span className="text-[10px] text-zinc-500 bg-zinc-900/30 border border-zinc-900/60 rounded-full px-3 py-1 font-mono tracking-tight shadow-sm">
-                  ⚡ {msg.text}
+              <div key={msg._id} className="flex justify-center my-1.5 select-none animate-chat-in font-mono text-[9px] tracking-tight">
+                <span className={`flex items-center gap-1.5 border rounded-full px-3 py-1 shadow-sm ${colorClass}`}>
+                  <span>{icon}</span>
+                  <span>{msg.text}</span>
                 </span>
               </div>
             );
