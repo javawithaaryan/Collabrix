@@ -1,6 +1,6 @@
 import Notification from "../models/Notification.js";
 
-import Workspace from "../models/workspace.js";
+import Workspace from "../models/Workspace.js";
 
 // Get all notifications for the current user (most recent 50)
 export const getNotifications = async (req, res, next) => {
