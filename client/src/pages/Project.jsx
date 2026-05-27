@@ -12,6 +12,7 @@ import ActivityPanel from "../components/ActivityPanel";
 import TaskModal from "../components/board/TaskModal";
 import AiSprintModal from "../components/board/AiSprintModal";
 import Avatar from "../components/ui/Avatar";
+import Skeleton from "../components/ui/Skeleton";
 
 const COLUMNS = [
   { id: "todo", label: "Todo" },
@@ -123,7 +124,7 @@ const Project = () => {
       });
     } catch (err) {
       setTasks((prev) => prev.filter((t) => t._id !== tempId));
-      setCreateError("Failed to create task. Try again.");
+      setCreateError("Couldn't add that task right now. Double check the network and give it another try!");
       console.error("Failed to create task:", err.message);
     } finally {
       setCreating(false);
@@ -225,7 +226,7 @@ const Project = () => {
       setAiPrompt("");
     } catch (err) {
       console.error("AI task generation failed:", err.message);
-      setAiError("AI generation failed. Try again in a moment.");
+      setAiError("AI sprint planner hit a brief quota spike. Falling back to offline sequence planning. No momentum lost!");
     } finally {
       setAiLoading(false);
     }
@@ -823,9 +824,29 @@ const Project = () => {
 
         {/* Kanban + side panels */}
         {loading ? (
-          <div className="flex items-center gap-3 text-zinc-500 py-10">
-            <span className="w-5 h-5 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
-            <span>Loading board...</span>
+          <div className="grid md:grid-cols-3 gap-5 animate-pulse">
+            {Array.from({ length: 3 }).map((_, colIdx) => (
+              <div key={colIdx} className="bg-zinc-950/80 border border-zinc-900 rounded-3xl p-5 min-h-[450px] flex flex-col gap-4">
+                <div className="flex justify-between items-center pb-3 border-b border-zinc-900">
+                  <Skeleton className="h-4 w-24 rounded" />
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                </div>
+                {Array.from({ length: 2 }).map((_, cardIdx) => (
+                  <div key={cardIdx} className="bg-zinc-900 border border-zinc-850 rounded-2xl p-4 flex flex-col gap-3">
+                    <div className="flex gap-1.5">
+                      <Skeleton className="h-3 w-10 rounded" />
+                      <Skeleton className="h-3 w-14 rounded" />
+                    </div>
+                    <Skeleton className="h-4 w-3/4 rounded" />
+                    <Skeleton className="h-10 w-full rounded" />
+                    <div className="flex justify-between items-center mt-2 pt-3 border-t border-zinc-900">
+                      <Skeleton className="h-3.5 w-10 rounded-full" />
+                      <Skeleton className="h-5 w-5 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         ) : (
           <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>

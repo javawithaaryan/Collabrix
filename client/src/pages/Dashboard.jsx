@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import api from "../lib/axios";
 import Sidebar from "../components/Sidebar";
+import Skeleton from "../components/ui/Skeleton";
 
 const PULSE_MESSAGES = [
   "2 teammates online",
@@ -171,9 +172,27 @@ const Dashboard = () => {
 
             {/* Workspaces grid */}
             {loading ? (
-              <div className="flex items-center gap-3 text-zinc-500 py-6">
-                <span className="w-4 h-4 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
-                <span className="text-xs">Loading workspaces...</span>
+              <div>
+                <h2 className="text-xs font-extrabold text-zinc-550 uppercase tracking-wider mb-4 select-none">
+                  Workspaces
+                </h2>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="bg-zinc-950 border border-zinc-900 rounded-2xl p-5 min-h-[140px] flex flex-col justify-between">
+                      <div>
+                        <Skeleton className="h-4 w-1/2 mb-2" />
+                        <Skeleton className="h-3 w-1/4" />
+                      </div>
+                      <div className="flex justify-between items-center pt-3 mt-4 border-t border-zinc-900">
+                        <div className="flex gap-1">
+                          <Skeleton className="h-4 w-4 rounded-full" />
+                          <Skeleton className="h-4 w-4 rounded-full" />
+                        </div>
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : workspaces.length === 0 ? (
               <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-10 text-center">
