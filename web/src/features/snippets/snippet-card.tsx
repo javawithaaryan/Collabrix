@@ -15,7 +15,7 @@ export function SnippetCard({ snippet }: { snippet: Snippet }) {
   }
 
   return (
-    <div className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-700 transition-colors">
+    <div className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-indigo-500/30 hover:bg-zinc-900/80 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300">
       <div className="p-4 border-b border-zinc-800/50 flex items-start justify-between bg-zinc-950/30">
         <div>
           <h3 className="text-base font-semibold text-zinc-100 flex items-center gap-2">

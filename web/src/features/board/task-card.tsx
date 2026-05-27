@@ -1,5 +1,6 @@
 "use client"
 
+import { useAiStore } from "@/stores/ai-store"
 import React from "react"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
@@ -21,6 +22,7 @@ const priorityColors = {
 
 export function TaskCard({ task }: TaskCardProps) {
   const { setSelectedTask } = useBoardStore()
+  const { setActiveTask } = useAiStore()
 
   const {
     attributes,
@@ -47,13 +49,26 @@ export function TaskCard({ task }: TaskCardProps) {
   }
 
   return (
-    <div
+<div
       ref={setNodeRef}
       style={style}
-      onClick={() => setSelectedTask(task.id)}
-      className="group flex flex-col gap-3 p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 hover:shadow-md cursor-grab active:cursor-grabbing transition-colors relative"
       {...attributes}
       {...listeners}
+      // 1. We keep your original styling, but added the indigo hover effect!
+      className="group flex flex-col gap-3 p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-indigo-500/50 hover:shadow-md cursor-grab active:cursor-grabbing transition-colors relative"
+      
+      // 2. We combine BOTH click actions into a single onClick event
+      onClick={() => {
+        // Your original action:
+        setSelectedTask(task.id);
+        
+        // The new AI action:
+        setActiveTask({
+          id: task.id,
+          title: task.title,
+          description: task.description || "No description provided."
+        });
+      }}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium text-zinc-200 leading-snug">

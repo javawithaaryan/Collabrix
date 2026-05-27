@@ -9,6 +9,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   return (
     <div className="flex w-full h-screen overflow-hidden bg-zinc-950 text-zinc-100">
+      <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-indigo-500/5 blur-[120px] rounded-full z-0" />
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <Navbar />

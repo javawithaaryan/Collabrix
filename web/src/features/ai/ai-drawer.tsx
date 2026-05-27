@@ -11,7 +11,7 @@ type ChatMessage = {
 }
 
 export function AiDrawer() {
-  const { isOpen, closeDrawer } = useAiStore()
+  const { isOpen, closeDrawer, activeTask, clearActiveTask } = useAiStore()
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -22,6 +22,7 @@ export function AiDrawer() {
   ])
   const [input, setInput] = useState("")
   const [isSending, setIsSending] = useState(false)
+
 
   useEffect(() => {
     const root = document.createElement("div")
@@ -87,7 +88,7 @@ export function AiDrawer() {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 pointer-events-none">
+    <div className={`fixed inset-0 z-9998 ${isOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
       <div
         className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -96,7 +97,7 @@ export function AiDrawer() {
       />
 
       <div
-        className={`absolute inset-y-0 right-0 w-full max-w-md sm:w-105 bg-zinc-950 border-l border-zinc-800 shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${
+        className={`pointer-events-auto absolute inset-y-0 right-0 w-full max-w-md sm:w-105 bg-zinc-950 border-l border-zinc-800 shadow-2xl z-9999 flex flex-col transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -132,6 +133,25 @@ export function AiDrawer() {
             </div>
           ))}
         </div>
+
+        {activeTask && (
+          <div className="px-4 pb-3 pt-1 bg-zinc-950">
+            <div className="flex items-start justify-between bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3">
+              <div className="flex flex-col gap-1 pr-2 overflow-hidden">
+                <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Context Attached</span>
+                <span className="text-sm font-medium text-zinc-200 truncate">{activeTask.title}</span>
+                <span className="text-xs text-zinc-400 truncate">{activeTask.description}</span>
+              </div>
+              <button
+                onClick={clearActiveTask}
+                className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors shrink-0"
+                aria-label="Clear context"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="p-4 border-t border-zinc-800 bg-zinc-950">
           <div className="relative flex items-center">

@@ -37,7 +37,7 @@ export function Sidebar() {
             {mainNavItems.map((item) => {
               const isActive = pathname === item.href
               return (
-                <Link key={item.href} href={item.href} className={cn("flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors group", isActive ? "bg-zinc-900 text-zinc-100 border border-zinc-800" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50")}>
+                <Link key={item.href} href={item.href} className={cn("flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors group", isActive ? "flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.05)] transition-all" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50")}>
                   <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-indigo-400" : "text-zinc-400 group-hover:text-zinc-200")} />
                   {!isCollapsed && <span>{item.name}</span>}
                 </Link>

@@ -43,6 +43,7 @@ export async function POST(request: Request) {
   }
 
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+  console.log("OPENAI_API_KEY:", OPENAI_API_KEY)
   if (!OPENAI_API_KEY) {
     return NextResponse.json(
       { error: "OpenAI API key is not configured." },
