@@ -747,7 +747,7 @@ export default function ResourceHub() {
                       return (
                         <div
                           key={res._id}
-                          className="bg-zinc-950 border border-zinc-900 rounded-3xl p-5 flex flex-col justify-between hover:border-zinc-800 transition duration-300 relative group overflow-hidden shadow-lg shadow-black/20"
+                          className="bg-zinc-950/80 border border-zinc-900/80 rounded-2xl p-5 flex flex-col justify-between hover:border-zinc-850 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/60 transition-all duration-300 relative group overflow-hidden shadow-lg shadow-black/20"
                         >
                           <div>
                             {/* Card Top Details */}
@@ -834,13 +834,30 @@ export default function ResourceHub() {
                                 {res.tags.map((t, ti) => (
                                   <span
                                     key={ti}
-                                    className="text-[9px] bg-zinc-900 border border-zinc-850 text-zinc-450 px-2 py-0.5 rounded-md font-mono"
+                                    className="text-[9px] bg-zinc-900 border border-zinc-850/80 text-zinc-500 px-2 py-0.5 rounded-md font-mono"
                                   >
                                     #{t}
                                   </span>
                                 ))}
                               </div>
                             )}
+
+                            {/* Teammate Annotations / Warnings / Learnings */}
+                            {res.comments?.filter(c => c.type === "caveat" || c.type === "solution" || c.text.includes("Why this matters")).map((ann, aIdx) => (
+                              <div key={aIdx} className={`mt-3 p-3 rounded-xl border text-[10px] font-mono leading-relaxed transition-all duration-200 group-hover:border-zinc-800 ${
+                                ann.type === "caveat" 
+                                  ? "bg-amber-950/15 border-amber-900/30 text-amber-300"
+                                  : ann.type === "solution"
+                                  ? "bg-emerald-950/15 border-emerald-900/30 text-emerald-300"
+                                  : "bg-zinc-900/50 border-zinc-850 text-zinc-350"
+                              }`}>
+                                <div className="flex items-center justify-between mb-1 text-[8px] font-extrabold uppercase tracking-wider">
+                                  <span className="opacity-90">{ann.type === "caveat" ? "⚠️ Warning" : ann.type === "solution" ? "💡 Learnings" : "📝 Note"}</span>
+                                  <span className="text-zinc-550">{ann.userName}</span>
+                                </div>
+                                <p className="italic">"{ann.text}"</p>
+                              </div>
+                            ))}
 
                             {/* Connected Tasks Badges */}
                             {res.tasks?.length > 0 && (
