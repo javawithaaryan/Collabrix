@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Project from "../models/Project.js";
 import { logPulseEvent } from "../services/pulseService.js";
+import { notifyWorkspaceMembers } from "./notificationController.js";
 
 const MAX_RETRIES = 2;
 const TIMEOUT_MS = 12000;
@@ -700,6 +701,19 @@ Rules:
             metadata: { projectId, projectType: decorated.projectType },
             io: req.app.get("io"),
           });
+
+          // Trigger Workspace Notification
+          notifyWorkspaceMembers({
+            workspaceId: project.workspace,
+            type: "sprint_generated",
+            title: "AI Sprint Roadmap Generated ✨",
+            message: `${req.user?.name || "AI"} generated a new sprint roadmap for "${decorated.projectType}"`,
+            priority: "high",
+            projectId,
+            actorId: req.user?._id,
+            actorName: req.user?.name,
+            app: req.app,
+          });
         }
       } catch (pulseErr) {
         console.error("[SprintPulse] Event logging failed:", pulseErr.message);
@@ -744,6 +758,19 @@ Rules:
         importance: "high",
         metadata: { projectId, projectType: decorated.projectType },
         io: req.app.get("io"),
+      });
+
+      // Trigger Workspace Notification
+      notifyWorkspaceMembers({
+        workspaceId: project.workspace,
+        type: "sprint_generated",
+        title: "AI Sprint Roadmap Generated ✨",
+        message: `${req.user?.name || "AI"} generated a fallback sprint roadmap for "${decorated.projectType}"`,
+        priority: "high",
+        projectId,
+        actorId: req.user?._id,
+        actorName: req.user?.name,
+        app: req.app,
       });
     }
   } catch (pulseErr) {

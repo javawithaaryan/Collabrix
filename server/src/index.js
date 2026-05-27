@@ -11,7 +11,8 @@ const PORT = process.env.PORT || 4000;
 // Wrap express in an http server so socket.io can share the same port
 const server = http.createServer(app);
 
-initSockets(server);
+const io = initSockets(server);
+app.set("io", io);
 
 connectDB();
 

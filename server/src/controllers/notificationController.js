@@ -1,5 +1,7 @@
 import Notification from "../models/Notification.js";
 
+import Workspace from "../models/workspace.js";
+
 // Get all notifications for the current user (most recent 50)
 export const getNotifications = async (req, res, next) => {
   try {
@@ -46,5 +48,49 @@ export const createNotification = async ({ userId, type, title, message, priorit
   } catch (err) {
     console.error("[notification] Failed to create notification:", err.message);
     return null;
+  }
+};
+
+// Broadcasts and persists notifications to workspace members (excluding the actor)
+export const notifyWorkspaceMembers = async ({
+  workspaceId,
+  type,
+  title,
+  message,
+  priority = "medium",
+  projectId,
+  taskId,
+  actorId,
+  actorName,
+  app,
+}) => {
+  try {
+    if (!workspaceId) return;
+    const workspace = await Workspace.findById(workspaceId).select("members").lean();
+    if (!workspace) return;
+
+    const io = app?.get("io");
+
+    const promises = (workspace.members || [])
+      .filter((m) => m.user.toString() !== actorId?.toString())
+      .map((m) =>
+        createNotification({
+          userId: m.user,
+          type,
+          title,
+          message,
+          priority,
+          projectId,
+          taskId,
+          workspaceId,
+          actorId,
+          actorName,
+          io,
+        })
+      );
+
+    await Promise.all(promises);
+  } catch (err) {
+    console.error("[notification] Failed to notify workspace members:", err.message);
   }
 };

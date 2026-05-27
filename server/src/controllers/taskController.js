@@ -2,6 +2,7 @@ import Task from "../models/Task.js";
 import Comment from "../models/Comment.js";
 import Project from "../models/Project.js";
 import { logPulseEvent } from "../services/pulseService.js";
+import { notifyWorkspaceMembers, createNotification } from "./notificationController.js";
 
 // Create a new task
 export const createTask = async (req, res, next) => {
@@ -52,6 +53,31 @@ export const createTask = async (req, res, next) => {
       .populate("resources")
       .lean();
 
+    // Trigger Task Created Notification
+    try {
+      let wsId = populated.workspace;
+      if (!wsId) {
+        const projectObj = await Project.findById(populated.project);
+        wsId = projectObj?.workspace;
+      }
+      if (wsId) {
+        notifyWorkspaceMembers({
+          workspaceId: wsId,
+          type: "task_created",
+          title: "New Task Created",
+          message: `${req.user?.name} created task "${populated.title}"`,
+          priority: "low",
+          projectId: populated.project,
+          taskId: populated._id,
+          actorId: req.user?._id,
+          actorName: req.user?.name,
+          app: req.app,
+        });
+      }
+    } catch (notifErr) {
+      console.error("[TaskNotification] Failed to notify task creation:", notifErr.message);
+    }
+
     res.status(201).json(populated);
   } catch (err) {
     next(err);
@@ -100,7 +126,7 @@ export const updateTaskStatus = async (req, res, next) => {
       { new: true, runValidators: true }
     ).populate("assignee createdBy", "name email avatar").populate("resources");
 
-    // If status has changed, log a high-fidelity Pulse event
+    // If status has changed, log a high-fidelity Pulse event and notify workspace
     if (updates.status && updates.status !== originalTask.status) {
       try {
         let wsId = updated.workspace;
@@ -125,9 +151,50 @@ export const updateTaskStatus = async (req, res, next) => {
             },
             io: req.app.get("io"),
           });
+
+          // Trigger Workspace Notification
+          notifyWorkspaceMembers({
+            workspaceId: wsId,
+            type: updates.status === "done" ? "task_completed" : "task_moved",
+            title: updates.status === "done" ? "Task Completed! 🎉" : "Task Status Moved",
+            message: `${req.user?.name} moved task "${updated.title}" to ${updates.status}`,
+            priority: updates.status === "done" ? "high" : "medium",
+            projectId: updated.project,
+            taskId: updated._id,
+            actorId: req.user?._id,
+            actorName: req.user?.name,
+            app: req.app,
+          });
         }
       } catch (pulseErr) {
         console.error("[TaskPulse] Event logging failed:", pulseErr.message);
+      }
+    }
+
+    // If assignee has changed, send a personal notification to the new assignee
+    if (updates.assignee && updates.assignee !== originalTask.assignee?.toString()) {
+      try {
+        let wsId = updated.workspace;
+        if (!wsId) {
+          const project = await Project.findById(updated.project);
+          wsId = project?.workspace;
+        }
+
+        createNotification({
+          userId: updates.assignee,
+          type: "task_assigned",
+          title: "New Task Assigned",
+          message: `${req.user?.name} assigned "${updated.title}" to you`,
+          priority: "high",
+          projectId: updated.project,
+          taskId: updated._id,
+          workspaceId: wsId,
+          actorId: req.user?._id,
+          actorName: req.user?.name,
+          io: req.app.get("io"),
+        });
+      } catch (assignErr) {
+        console.error("[TaskAssignNotification] Failed to send assignment alert:", assignErr.message);
       }
     }
 
@@ -172,6 +239,35 @@ export const addComment = async (req, res, next) => {
     const populated = await Comment.findById(comment._id)
       .populate("sender", "name email avatar")
       .lean();
+
+    // Trigger Comment Notification
+    try {
+      const taskObj = await Task.findById(taskId);
+      if (taskObj) {
+        let wsId = taskObj.workspace;
+        if (!wsId) {
+          const project = await Project.findById(taskObj.project);
+          wsId = project?.workspace;
+        }
+
+        if (wsId) {
+          notifyWorkspaceMembers({
+            workspaceId: wsId,
+            type: "comment",
+            title: "New Task Comment",
+            message: `${req.user?.name} commented on "${taskObj.title}"`,
+            priority: "medium",
+            projectId: taskObj.project,
+            taskId: taskObj._id,
+            actorId: req.user?._id,
+            actorName: req.user?.name,
+            app: req.app,
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.error("[CommentNotification] Failed to notify comment creation:", notifErr.message);
+    }
 
     res.status(201).json(populated);
   } catch (err) {

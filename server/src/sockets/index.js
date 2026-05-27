@@ -212,6 +212,7 @@ const initSockets = (server) => {
       }
     });
   });
+  return io;
 };
 
 function broadcastPresence(io, projectId) {
