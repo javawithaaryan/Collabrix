@@ -18,6 +18,12 @@ const initSockets = (server) => {
   });
 
   io.on("connection", (socket) => {
+    // Join personal notification room so we can push to specific users
+    const userId = socket.handshake.query?.userId;
+    if (userId) {
+      socket.join(`user:${userId}`);
+    }
+
     // ─── Join a project room ───────────────────────────────────────────
     socket.on("join-project", ({ projectId, user }) => {
       if (!projectId || !user) return;
@@ -48,6 +54,17 @@ const initSockets = (server) => {
       removeFromPresence(socket.id, projectId);
       broadcastPresence(io, projectId);
       delete socketToProject[socket.id];
+    });
+
+    // Join workspace room for workspace-level events (member joins, invites, etc)
+    socket.on("join-workspace", ({ workspaceId, userId, userName }) => {
+      if (!workspaceId) return;
+      socket.join(`workspace:${workspaceId}`);
+      if (userId) socket.join(`user:${userId}`);
+    });
+
+    socket.on("leave-workspace", ({ workspaceId }) => {
+      if (!workspaceId) socket.leave(`workspace:${workspaceId}`);
     });
 
     // ─── Task events ──────────────────────────────────────────────────
