@@ -66,6 +66,15 @@ export default function ResourceHub() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
 
+  // Curated Engineering Collections / Playbooks
+  const [collections, setCollections] = useState([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState("all");
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [newCollectionDesc, setNewCollectionDesc] = useState("");
+  const [newCollectionResources, setNewCollectionResources] = useState([]);
+  const [allWorkspaceResources, setAllWorkspaceResources] = useState([]);
+
   // Recommendations and Projects
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
@@ -100,10 +109,27 @@ export default function ResourceHub() {
   // Comment & Expanded States
   const [expandedCommentsId, setExpandedCommentsId] = useState(null);
   const [commentText, setCommentText] = useState("");
+  const [commentType, setCommentType] = useState("note");
+  const [solvedIndicator, setSolvedIndicator] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+
+  // Presence tracker
+  const [activeResourceViewers, setActiveResourceViewers] = useState({}); // { resourceId: [userName] }
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const urlTimerRef = useRef(null);
+
+  // Global keydown paste capture overlay (Ctrl/Cmd + K)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setShowAddModal(true);
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
 
   // ─── Fetch Resources ───────────────────────────────────────────────────
   const fetchResources = useCallback(async () => {
@@ -126,6 +152,14 @@ export default function ResourceHub() {
     }
   }, [workspaceId, activeCategory, activeType, searchQuery, showPrivateOnly, page]);
 
+  // Curated Engineering Playbooks Fetch
+  const fetchCollections = useCallback(async () => {
+    try {
+      const res = await api.get(`/collections/workspace/${workspaceId}`);
+      setCollections(res.data || []);
+    } catch (_) {}
+  }, [workspaceId]);
+
   // ─── Fetch Recommendations & Context ───────────────────────────────
   const fetchRecommendations = useCallback(async () => {
     try {
@@ -138,6 +172,31 @@ export default function ResourceHub() {
       setLoadingRecs(false);
     }
   }, [workspaceId]);
+
+  // Track AI feedback
+  const handleTrackFeedback = async (rec, action) => {
+    try {
+      await api.post("/resources/feedback", {
+        workspaceId,
+        resourceTitle: rec.title,
+        resourceDomain: rec.domain || "",
+        action,
+      });
+      if (action === "saved") {
+        handleQuickAdd(rec);
+      }
+      // Remove from active recommended options
+      setRecommendations((prev) => prev.filter((r) => r.title !== rec.title));
+    } catch (_) {}
+  };
+
+  // Track resource views and trigger historical memory logs
+  const handleTrackView = async (resId) => {
+    try {
+      const res = await api.post(`/resources/${resId}/view`);
+      setResources((prev) => prev.map((r) => (r._id === resId ? res.data : r)));
+    } catch (_) {}
+  };
 
   const fetchWorkspaceProjects = useCallback(async () => {
     try {
@@ -160,9 +219,10 @@ export default function ResourceHub() {
   useEffect(() => {
     localStorage.setItem("activeWorkspaceId", workspaceId);
     fetchResources();
+    fetchCollections();
     fetchRecommendations();
     fetchWorkspaceProjects();
-  }, [workspaceId, fetchResources, fetchRecommendations, fetchWorkspaceProjects]);
+  }, [workspaceId, fetchResources, fetchCollections, fetchRecommendations, fetchWorkspaceProjects]);
 
   // ─── Realtime Socket Listeners ──────────────────────────────────────────
   useEffect(() => {
@@ -185,14 +245,24 @@ export default function ResourceHub() {
       setResources((prev) => prev.filter((r) => r._id !== deletedId));
     };
 
+    const onResourceViewed = ({ resourceId, userName }) => {
+      setActiveResourceViewers((prev) => {
+        const current = prev[resourceId] || [];
+        if (current.includes(userName)) return prev;
+        return { ...prev, [resourceId]: [...current, userName] };
+      });
+    };
+
     socket.on("resource:created", onResourceCreated);
     socket.on("resource:updated", onResourceUpdated);
     socket.on("resource:deleted", onResourceDeleted);
+    socket.on("resource:viewed", onResourceViewed);
 
     return () => {
       socket.off("resource:created", onResourceCreated);
       socket.off("resource:updated", onResourceUpdated);
       socket.off("resource:deleted", onResourceDeleted);
+      socket.off("resource:viewed", onResourceViewed);
     };
   }, [workspaceId]);
 
@@ -340,9 +410,15 @@ export default function ResourceHub() {
 
     setSubmittingComment(true);
     try {
-      const res = await api.post(`/resources/${id}/comment`, { text: commentText.trim() });
+      const res = await api.post(`/resources/${id}/comment`, {
+        text: commentText.trim(),
+        commentType,
+        solvedIndicator,
+      });
       setResources((prev) => prev.map((r) => (r._id === id ? res.data : r)));
       setCommentText("");
+      setCommentType("note");
+      setSolvedIndicator(false);
     } catch (err) {
       console.error("Comment submit failed:", err.message);
     } finally {
@@ -357,6 +433,45 @@ export default function ResourceHub() {
       await api.delete(`/resources/${id}`);
       setResources((prev) => prev.filter((r) => r._id !== id));
     } catch (_) {}
+  };
+
+  // ─── Curated Playbook Collections ──────────────────────────────────────
+  const fetchAllWorkspaceResources = async () => {
+    try {
+      const res = await api.get(`/resources/workspace/${workspaceId}?limit=100`);
+      setAllWorkspaceResources(res.data.resources || []);
+    } catch (err) {
+      console.error("Failed to load workspace resources:", err.message);
+    }
+  };
+
+  const handleCreateCollection = async (e) => {
+    e.preventDefault();
+    if (!newCollectionName.trim()) return;
+
+    try {
+      setSaving(true);
+      const payload = {
+        name: newCollectionName.trim(),
+        description: newCollectionDesc.trim(),
+        workspaceId,
+        resourceIds: newCollectionResources,
+        sprintLink: "",
+      };
+
+      const res = await api.post("/collections", payload);
+      setCollections((prev) => [res.data, ...prev]);
+
+      // Reset fields
+      setNewCollectionName("");
+      setNewCollectionDesc("");
+      setNewCollectionResources([]);
+      setShowCollectionModal(false);
+    } catch (err) {
+      console.error("Failed to curate playbook:", err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Tag helper
@@ -448,34 +563,148 @@ export default function ResourceHub() {
           </div>
 
           <div className="grid lg:grid-cols-4 gap-6 items-start">
-            {/* Category Filter Column */}
-            <div className="lg:col-span-1 flex flex-col gap-1.5 bg-zinc-950/40 border border-zinc-900 rounded-3xl p-4">
-              <span className="text-[10px] text-zinc-650 uppercase font-black tracking-wider block px-3.5 mb-2 select-none">
-                Categories
-              </span>
-              <div className="flex flex-row overflow-x-auto lg:flex-col lg:overflow-x-visible gap-1 pb-2 lg:pb-0 scrollbar-none">
-                {CATEGORIES.map((cat) => (
+            {/* Category & Playbooks Sidebar */}
+            <div className="lg:col-span-1 flex flex-col gap-6">
+              {/* Category Filter Column */}
+              <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-4 flex flex-col gap-1.5">
+                <span className="text-[10px] text-zinc-650 uppercase font-black tracking-wider block px-3.5 mb-2 select-none">
+                  Categories
+                </span>
+                <div className="flex flex-row overflow-x-auto lg:flex-col lg:overflow-x-visible gap-1 pb-2 lg:pb-0 scrollbar-none">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => {
+                        setActiveCategory(cat.id);
+                        setSelectedCollectionId("all");
+                        setPage(1);
+                      }}
+                      className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-left text-xs font-semibold whitespace-nowrap transition w-full ${
+                        activeCategory === cat.id && selectedCollectionId === "all"
+                          ? "bg-zinc-900 text-white border border-zinc-800 shadow"
+                          : "text-zinc-550 hover:bg-zinc-900/40 hover:text-zinc-300"
+                      }`}
+                    >
+                      <span className="text-sm flex-shrink-0 select-none">{cat.icon}</span>
+                      <span className="truncate">{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Collections / Playbooks Ledger */}
+              <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-4 flex flex-col gap-3">
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-[10px] text-zinc-655 uppercase font-black tracking-wider select-none font-mono">
+                    Playbooks
+                  </span>
                   <button
-                    key={cat.id}
                     onClick={() => {
-                      setActiveCategory(cat.id);
-                      setPage(1);
+                      setShowCollectionModal(true);
+                      fetchAllWorkspaceResources();
                     }}
-                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-left text-xs font-semibold whitespace-nowrap transition w-full ${
-                      activeCategory === cat.id
-                        ? "bg-zinc-900 text-white border border-zinc-800 shadow"
-                        : "text-zinc-550 hover:bg-zinc-900/40 hover:text-zinc-300"
-                    }`}
+                    className="text-[9px] font-mono text-zinc-400 hover:text-white transition uppercase"
                   >
-                    <span className="text-sm flex-shrink-0 select-none">{cat.icon}</span>
-                    <span className="truncate">{cat.label}</span>
+                    [+ new]
                   </button>
-                ))}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  {collections.length === 0 ? (
+                    <p className="text-[9px] text-zinc-700 italic px-2 font-mono">No playbooks seeded. Organize your knowledge packs here.</p>
+                  ) : (
+                    collections.map((col) => (
+                      <button
+                        key={col._id}
+                        onClick={() => {
+                          setSelectedCollectionId(col._id);
+                          setActiveCategory("all");
+                          setResources(col.resources || []);
+                        }}
+                        className={`flex flex-col gap-0.5 px-3.5 py-2.5 rounded-xl text-left transition w-full ${
+                          selectedCollectionId === col._id
+                            ? "bg-zinc-900 text-white border border-zinc-800"
+                            : "text-zinc-550 hover:bg-zinc-900/30 hover:text-zinc-300"
+                        }`}
+                      >
+                        <span className="text-xs font-extrabold truncate">📔 {col.name}</span>
+                        {col.description && (
+                          <span className="text-[9px] text-zinc-600 font-mono truncate">{col.description}</span>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Knowledge Cards Stream */}
             <div className="lg:col-span-3 flex flex-col gap-6">
+              {selectedCollectionId !== "all" && (
+                (() => {
+                  const currentCollection = collections.find(c => c._id === selectedCollectionId);
+                  if (!currentCollection) return null;
+                  return (
+                    <div className="bg-gradient-to-r from-zinc-950 to-zinc-900 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden flex flex-col gap-4 shadow-xl">
+                      <div className="absolute top-0 right-0 p-4">
+                        <button
+                          onClick={() => {
+                            setSelectedCollectionId("all");
+                            fetchResources();
+                          }}
+                          className="text-zinc-500 hover:text-white text-xs font-mono transition"
+                        >
+                          ✕ Close Playbook
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] text-zinc-550 font-mono uppercase tracking-wider font-extrabold">Curation Playbook</span>
+                        <h2 className="text-xl font-black text-white">📔 {currentCollection.name}</h2>
+                        {currentCollection.description && (
+                          <p className="text-xs text-zinc-400 font-mono mt-1">{currentCollection.description}</p>
+                        )}
+                      </div>
+
+                      {currentCollection.aiSummary ? (
+                        <div className="bg-violet-950/10 border border-violet-900/30 rounded-2xl p-4 mt-2">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <span className="text-xs select-none">🧙</span>
+                            <span className="text-[10px] text-violet-400 font-mono uppercase tracking-widest font-bold">Gemini Playbook Guide</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-300 font-mono leading-relaxed select-text whitespace-pre-wrap">
+                            {currentCollection.aiSummary}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-zinc-900/40 border border-zinc-900 rounded-2xl p-3.5 mt-2 flex items-center justify-between">
+                          <span className="text-[10px] text-zinc-500 font-mono">No AI guidance generated yet for this playbook.</span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center text-[10px] text-zinc-550 font-mono mt-1 border-t border-zinc-900/80 pt-3">
+                        <span>Created by <strong className="text-zinc-400">{currentCollection.createdBy?.name || "System"}</strong></span>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await api.post(`/collections/${currentCollection._id}/follow`);
+                              setCollections((prev) => prev.map(c => c._id === currentCollection._id ? { ...c, followers: res.data.followers } : c));
+                            } catch (_) {}
+                          }}
+                          className={`px-3 py-1 rounded-md border text-[9px] font-bold transition ${
+                            currentCollection.followers?.includes(user.id)
+                              ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
+                              : "bg-white text-black border-transparent hover:bg-zinc-200"
+                          }`}
+                        >
+                          {currentCollection.followers?.includes(user.id) ? "★ Following Playbook" : "☆ Follow Playbook"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
+
               {loading ? (
                 <div className="grid sm:grid-cols-2 gap-4">
                   {Array.from({ length: 4 }).map((_, idx) => (
@@ -540,6 +769,12 @@ export default function ResourceHub() {
                               </div>
 
                               <div className="flex items-center gap-1.5">
+                                {activeResourceViewers[res._id]?.length > 0 && (
+                                  <div className="flex items-center gap-1 text-[8px] font-mono text-emerald-400 select-none mr-2 bg-zinc-900 border border-zinc-850 px-1.5 py-0.5 rounded">
+                                    <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                                    <span>{activeResourceViewers[res._id].join(", ")} reading</span>
+                                  </div>
+                                )}
                                 {res.isPrivate && (
                                   <span className="text-[9px] font-mono text-zinc-500 bg-zinc-900/60 border border-zinc-850 px-1.5 py-0.5 rounded-full">
                                     🔒 Private
@@ -557,6 +792,7 @@ export default function ResourceHub() {
                               target={res.url ? "_blank" : "_self"}
                               rel="noreferrer"
                               className="block focus:outline-none"
+                              onClick={() => handleTrackView(res._id)}
                             >
                               <h3 className="text-sm font-extrabold text-zinc-200 group-hover:text-white leading-snug tracking-tight transition line-clamp-1">
                                 {res.title}
@@ -621,6 +857,27 @@ export default function ResourceHub() {
                                 ))}
                               </div>
                             )}
+
+                            {res.usageMetadata?.length > 0 && (
+                              <div className="mt-2.5 pt-2.5 border-t border-zinc-900/60 flex flex-col gap-1 select-none">
+                                {res.usageMetadata.map((metaItem, mIdx) => {
+                                  const colors = {
+                                    sprint: "bg-indigo-950/20 text-indigo-400 border-indigo-900/30",
+                                    task: "bg-teal-950/20 text-teal-400 border-teal-900/30",
+                                    fix: "bg-emerald-950/20 text-emerald-400 border-emerald-900/30",
+                                    deploy: "bg-amber-950/20 text-amber-400 border-amber-900/30",
+                                    other: "bg-zinc-900 text-zinc-400 border-zinc-800",
+                                  };
+                                  const color = colors[metaItem.contextType] || colors.other;
+                                  return (
+                                    <div key={mIdx} className={`text-[8px] font-mono border px-2 py-0.5 rounded-lg flex items-center gap-1.5 w-fit ${color}`}>
+                                      <span>⚡</span>
+                                      <span>{metaItem.text}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
 
                           {/* Card bottom bar */}
@@ -633,6 +890,11 @@ export default function ResourceHub() {
                             </div>
 
                             <div className="flex items-center gap-3">
+                              {/* Views */}
+                              <span className="text-[10px] text-zinc-500 font-mono select-none" title="Views">
+                                👁️ {res.views || 0}
+                              </span>
+
                               {/* Likes */}
                               <button
                                 onClick={() => handleLike(res._id)}
@@ -640,22 +902,20 @@ export default function ResourceHub() {
                                   liked ? "text-red-400" : "text-zinc-500 hover:text-red-400"
                                 }`}
                               >
-                                <span>{liked ? "❤️" : "🤍"}</span>
+                                <span>{liked ? "♥" : "♡"}</span>
                                 <span>{res.likes?.length || 0}</span>
                               </button>
 
-                              {/* Comments trigger */}
+                              {/* Comments count / toggle */}
                               <button
                                 onClick={() => setExpandedCommentsId(expandedCommentsId === res._id ? null : res._id)}
-                                className={`flex items-center gap-1 text-[10px] font-mono transition ${
-                                  expandedCommentsId === res._id ? "text-white" : "text-zinc-500 hover:text-white"
-                                }`}
+                                className="flex items-center gap-1 text-[10px] text-zinc-550 hover:text-white font-mono transition"
                               >
                                 <span>💬</span>
                                 <span>{res.comments?.length || 0}</span>
                               </button>
 
-                              {/* Delete option */}
+                              {/* Delete button if creator */}
                               {isCreator && (
                                 <button
                                   onClick={() => handleDelete(res._id)}
@@ -671,34 +931,73 @@ export default function ResourceHub() {
                           {/* Expanded Comments Panel */}
                           {expandedCommentsId === res._id && (
                             <div className="mt-4 pt-4 border-t border-zinc-900/60 flex flex-col gap-3 max-h-[220px] overflow-y-auto pr-1">
-                              <span className="text-[9px] uppercase font-bold text-zinc-550 tracking-wider">Comments</span>
+                              <span className="text-[9px] uppercase font-bold text-zinc-550 tracking-wider font-mono">Comments</span>
                               <div className="flex flex-col gap-2">
                                 {(res.comments || []).map((comm) => (
                                   <div key={comm._id} className="bg-zinc-900/40 border border-zinc-900 rounded-xl p-2.5">
                                     <div className="flex justify-between items-center mb-0.5">
-                                      <span className="text-[10px] font-extrabold text-zinc-400">{comm.userName}</span>
-                                      <span className="text-[8px] text-zinc-600 font-mono">{new Date(comm.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] font-extrabold text-zinc-400">{comm.userName}</span>
+                                        {comm.type && comm.type !== "note" && (
+                                          <span className="text-[7px] font-mono uppercase bg-red-950/40 text-red-400 border border-red-900/30 px-1 rounded">
+                                            {comm.type}
+                                          </span>
+                                        )}
+                                        {comm.solvedIndicator && (
+                                          <span className="text-[7px] font-mono uppercase bg-emerald-950/40 text-emerald-400 border border-emerald-900/30 px-1 rounded">
+                                            ✔ resolved blocker
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-[8px] text-zinc-650 font-mono">{new Date(comm.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                     <p className="text-[10px] text-zinc-300 leading-relaxed break-words">{comm.text}</p>
                                   </div>
                                 ))}
                               </div>
 
-                              <form onSubmit={(e) => handleCommentSubmit(e, res._id)} className="flex gap-1.5 mt-1">
-                                <input
-                                  type="text"
-                                  placeholder="Reply or discuss..."
-                                  value={commentText}
-                                  onChange={(e) => setCommentText(e.target.value)}
-                                  className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-[10px] outline-none focus:border-zinc-700 transition"
-                                />
-                                <button
-                                  type="submit"
-                                  disabled={!commentText.trim() || submittingComment}
-                                  className="bg-white text-black px-3 py-1.5 rounded-lg text-[9px] font-extrabold hover:bg-zinc-200 transition disabled:opacity-40"
-                                >
-                                  Post
-                                </button>
+                              <form onSubmit={(e) => handleCommentSubmit(e, res._id)} className="flex flex-col gap-2 mt-1 bg-zinc-900/30 p-2 rounded-2xl border border-zinc-900">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <select
+                                      value={commentType}
+                                      onChange={(e) => setCommentType(e.target.value)}
+                                      className="bg-zinc-950 text-zinc-400 border border-zinc-850 text-[9px] font-mono rounded px-1 py-0.5 outline-none cursor-pointer"
+                                    >
+                                      <option value="note">Note</option>
+                                      <option value="caveat">Caveat</option>
+                                      <option value="warning">Warning</option>
+                                      <option value="solution">Solution</option>
+                                    </select>
+
+                                    <label className="flex items-center gap-1.5 text-[9px] text-zinc-500 hover:text-white cursor-pointer select-none font-mono">
+                                      <input
+                                        type="checkbox"
+                                        checked={solvedIndicator}
+                                        onChange={(e) => setSolvedIndicator(e.target.checked)}
+                                        className="rounded border-zinc-800 bg-zinc-950 text-white cursor-pointer accent-white"
+                                      />
+                                      Helped solve blocker
+                                    </label>
+                                  </div>
+                                </div>
+
+                                <div className="flex gap-1.5">
+                                  <input
+                                    type="text"
+                                    placeholder={solvedIndicator ? "Explain how this link solved the bug..." : "Reply or discuss..."}
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-[10px] outline-none focus:border-zinc-700 transition"
+                                  />
+                                  <button
+                                    type="submit"
+                                    disabled={!commentText.trim() || submittingComment}
+                                    className="bg-white text-black px-3 py-1.5 rounded-lg text-[9px] font-extrabold hover:bg-zinc-200 transition disabled:opacity-40"
+                                  >
+                                    Post
+                                  </button>
+                                </div>
                               </form>
                             </div>
                           )}
@@ -777,12 +1076,21 @@ export default function ResourceHub() {
 
                     <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-violet-900/10">
                       <span className="text-[9px] text-zinc-500 font-mono">{rec.domain}</span>
-                      <button
-                        onClick={() => handleQuickAdd(rec)}
-                        className="text-[9px] font-extrabold uppercase text-violet-400 hover:text-violet-300 transition"
-                      >
-                        + Save to Hub
-                      </button>
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          onClick={() => handleTrackFeedback(rec, "ignored")}
+                          className="text-[9px] font-mono text-zinc-600 hover:text-zinc-400 transition"
+                          title="Dismiss recommendation"
+                        >
+                          Dismiss
+                        </button>
+                        <button
+                          onClick={() => handleTrackFeedback(rec, "saved")}
+                          className="text-[9px] font-extrabold uppercase text-violet-400 hover:text-violet-300 transition"
+                        >
+                          + Save
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1128,6 +1436,133 @@ export default function ResourceHub() {
                   className="px-5 py-2.5 bg-white text-black hover:bg-zinc-200 text-xs font-extrabold rounded-xl transition disabled:opacity-40"
                 >
                   {saving ? "Saving..." : "Save Knowledge"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Slide-Up Curate Playbook Collection Modal */}
+      {showCollectionModal && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto animate-overlay">
+          <div className="bg-zinc-950 border border-zinc-900 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-modal">
+            {/* Modal Header */}
+            <div className="px-6 py-5 border-b border-zinc-900 flex justify-between items-center bg-zinc-950/80">
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg">📔</span>
+                <div>
+                  <h2 className="text-sm font-extrabold text-white tracking-tight">Curate Engineering Playbook</h2>
+                  <p className="text-[10px] text-zinc-550 font-mono mt-0.5">Bundle resources into structured playbooks for your team</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCollectionModal(false)}
+                className="text-zinc-600 hover:text-white text-xs font-mono transition"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {/* Modal Body / Form */}
+            <form onSubmit={handleCreateCollection} className="flex-1 flex flex-col min-h-0 bg-zinc-950/40 p-6 gap-5 overflow-y-auto scrollbar-thin">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono font-bold">Playbook Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Postgres DB Scaling Rules"
+                  value={newCollectionName}
+                  onChange={(e) => setNewCollectionName(e.target.value)}
+                  className="bg-zinc-950 border border-zinc-900 focus:border-zinc-700 outline-none rounded-xl px-4 py-3 text-xs text-white placeholder-zinc-750 transition"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono font-bold">Scope / Description</label>
+                <textarea
+                  placeholder="Summarize when and why developers should reference this playbook..."
+                  value={newCollectionDesc}
+                  onChange={(e) => setNewCollectionDesc(e.target.value)}
+                  className="bg-zinc-950 border border-zinc-900 focus:border-zinc-700 outline-none rounded-xl px-4 py-3 text-xs text-white placeholder-zinc-750 min-h-[70px] max-h-[140px] resize-y font-mono transition"
+                />
+              </div>
+
+              {/* Resource Selection List */}
+              <div className="flex flex-col gap-2 min-h-0 flex-1">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono font-bold">Select References to Bundle</label>
+                  <span className="text-[9px] text-zinc-650 font-mono">
+                    {newCollectionResources.length} items bundled
+                  </span>
+                </div>
+
+                <div className="border border-zinc-900 bg-zinc-950 rounded-2xl flex-1 overflow-y-auto max-h-[180px] p-2 flex flex-col gap-1.5 scrollbar-thin">
+                  {allWorkspaceResources.length === 0 ? (
+                    <div className="text-center py-8 text-zinc-650 text-[10px] font-mono italic">
+                      No saved resources found in workspace to curate.
+                    </div>
+                  ) : (
+                    allWorkspaceResources.map((item) => {
+                      const isSelected = newCollectionResources.includes(item._id);
+                      return (
+                        <label
+                          key={item._id}
+                          className={`flex items-center gap-3 p-2.5 rounded-xl border transition cursor-pointer select-none ${
+                            isSelected
+                              ? "bg-zinc-900/60 border-zinc-800 text-white"
+                              : "bg-zinc-950 border-zinc-900 text-zinc-450 hover:bg-zinc-900/20 hover:text-zinc-200"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setNewCollectionResources((prev) => [...prev, item._id]);
+                              } else {
+                                setNewCollectionResources((prev) => prev.filter((id) => id !== item._id));
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-zinc-800 bg-zinc-950 text-white focus:ring-zinc-700 outline-none cursor-pointer accent-white"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs font-bold block truncate">{item.title}</span>
+                            <span className="text-[9px] text-zinc-600 font-mono block truncate mt-0.5">{item.url}</span>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* AI Playbook notice */}
+              <div className="bg-violet-950/15 border border-violet-900/20 rounded-2xl p-4 flex gap-3 items-center">
+                <span className="text-lg">🧙</span>
+                <div>
+                  <h4 className="text-[10px] font-bold text-violet-400 font-mono uppercase tracking-wider">Gemini Playbook Orchestrator</h4>
+                  <p className="text-[9px] text-zinc-550 leading-relaxed font-mono mt-0.5">
+                    Bundling 2 or more resources will automatically invoke the AI Architect to synthesize a custom integration guide for your team.
+                  </p>
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="border-t border-zinc-900 pt-5 flex gap-3 justify-end flex-shrink-0 bg-zinc-950/80">
+                <button
+                  type="button"
+                  onClick={() => setShowCollectionModal(false)}
+                  className="px-5 py-2.5 border border-zinc-850 hover:border-zinc-700 text-xs font-extrabold text-zinc-400 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || !newCollectionName.trim()}
+                  className="px-5 py-2.5 bg-white text-black hover:bg-zinc-200 text-xs font-extrabold rounded-xl transition disabled:opacity-40"
+                >
+                  {saving ? "Synthesizing Playbook..." : "Seed Playbook"}
                 </button>
               </div>
             </form>
