@@ -389,7 +389,6 @@ const Project = () => {
       socket.off("activity:new", onActivity);
       socket.off("task:drag-started", onPeerDragStarted);
       socket.off("task:drag-ended", onPeerDragEnded);
-      socket.disconnect();
     };
   }, [id]);
 
