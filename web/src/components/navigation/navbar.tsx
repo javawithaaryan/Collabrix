@@ -1,9 +1,12 @@
 "use client"
 
 import React from "react"
-import { Search, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
+import { useAiStore } from "@/stores/ai-store"
 
 export function Navbar() {
+  const { openDrawer } = useAiStore()
+
   return (
     <header className="h-14 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 left-0 right-0 w-full flex items-center justify-between px-6 z-10">
       <div className="flex items-center gap-2 text-sm text-zinc-400 font-medium">
@@ -18,7 +21,11 @@ export function Navbar() {
           <div className="w-6 h-6 rounded-full border border-zinc-950 bg-indigo-600 text-[9px] font-bold text-white flex items-center justify-center">AM</div>
         </div>
 
-        <button className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs font-medium px-3 py-1.5 rounded-lg transition-all shadow-sm">
+        <button
+          type="button"
+          onClick={openDrawer}
+          className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs font-medium px-3 py-1.5 rounded-lg transition-all shadow-sm"
+        >
           <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
           <span>Ask AI</span>
         </button>

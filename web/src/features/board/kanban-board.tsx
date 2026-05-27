@@ -18,10 +18,16 @@ import { Task } from "@/types/board"
 import { BoardColumn } from "./board-column"
 import { TaskCard } from "./task-card"
 
+// 1. We import the Walkie-Talkie hook
+import { useSocket } from "@/hooks/use-socket" 
+
 export function KanbanBoard() {
   const { columns, tasks, moveTask } = useBoardStore()
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [isMounted, setIsMounted] = useState(false)
+  
+  // 2. We turn the Walkie-Talkie on
+  const socket = useSocket() 
 
   useEffect(() => {
     setIsMounted(true)
@@ -52,19 +58,38 @@ export function KanbanBoard() {
     
     if (activeTask && overTask && activeTask.columnId !== overTask.columnId) {
       moveTask(activeId, overTask.columnId, overTask.position)
+      
+      // 3. We broadcast to everyone when a card moves between columns
+      socket?.emit("task-moved", { 
+        taskId: activeId, 
+        newColumnId: overTask.columnId, 
+        position: overTask.position 
+      })
     }
     
     if (activeTask && !overTask) {
       const isOverColumn = columns.find((c) => c.id === overId)
       if (isOverColumn && activeTask.columnId !== overId) {
-        moveTask(activeId, overId, tasks.filter(t => t.columnId === overId).length)
+        
+        // THE BUG FIX: Calculate the new position first
+        const newPosition = tasks.filter(t => t.columnId === overId).length
+        
+        // Move it locally in your Zustand store
+        moveTask(activeId, overId, newPosition)
+        
+        // 4. We broadcast to everyone when a card moves to an empty column
+        socket?.emit("task-moved", { 
+          taskId: activeId, 
+          newColumnId: overId, 
+          position: newPosition 
+        })
       }
     }
   }
 
   const onDragEnd = () => setActiveTask(null)
 
-  if (!isMounted) return null // Prevents hydration mismatch errors
+  if (!isMounted) return null
 
   return (
     <DndContext
