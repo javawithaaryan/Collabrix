@@ -829,21 +829,28 @@ const Project = () => {
           </div>
         ) : (
           <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="grid xl:grid-cols-5 gap-5">
-              {COLUMNS.map(({ id: colId, label }) =>
-                renderColumn(colId, label, groupedTasks[colId])
-              )}
-
-              <div className="h-[70vh]">
-                <ChatPanel projectId={id} parentTypingUsers={typingUsers} />
+            <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 items-start">
+              {/* Columns container: horizontal swipe on mobile, grid on desktop */}
+              <div className="lg:col-span-8 flex flex-row overflow-x-auto snap-x snap-mandatory gap-4 scrollbar-none pb-4 w-full md:grid md:grid-cols-3 md:overflow-x-visible">
+                {COLUMNS.map(({ id: colId, label }) => (
+                  <div key={colId} className="min-w-[280px] sm:min-w-[320px] md:min-w-0 snap-center flex-1">
+                    {renderColumn(colId, label, groupedTasks[colId])}
+                  </div>
+                ))}
               </div>
 
-              <div className="h-[70vh]">
-                <ActivityPanel
-                  activities={activities}
-                  onlineUsers={onlineUsers}
-                  onTaskClick={(taskId) => setSelectedTaskId(taskId)}
-                />
+              {/* Side Panels: Chat + Activity */}
+              <div className="lg:col-span-4 flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-col gap-6 w-full">
+                <div className="h-[460px] lg:h-[360px] xl:h-[400px]">
+                  <ChatPanel projectId={id} parentTypingUsers={typingUsers} />
+                </div>
+                <div className="h-[460px] lg:h-[360px] xl:h-[400px]">
+                  <ActivityPanel
+                    activities={activities}
+                    onlineUsers={onlineUsers}
+                    onTaskClick={(taskId) => setSelectedTaskId(taskId)}
+                  />
+                </div>
               </div>
             </div>
           </DragDropContext>
