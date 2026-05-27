@@ -9,15 +9,17 @@ import {
   getComments,
   addComment,
   getWorkspaceTasks,
+  deleteTask,
 } from "../controllers/taskController.js";
 
 const router = express.Router();
 
 // Task CRUD
 router.post("/", authMiddleware, createTask);
-router.get("/:projectId", authMiddleware, getTasks);
 router.get("/workspace/:workspaceId", authMiddleware, getWorkspaceTasks);
+router.get("/:projectId", authMiddleware, getTasks);
 router.put("/:taskId", authMiddleware, updateTaskStatus);
+router.delete("/:taskId", authMiddleware, deleteTask);
 
 // Comments
 router.get("/:taskId/comments", authMiddleware, getComments);

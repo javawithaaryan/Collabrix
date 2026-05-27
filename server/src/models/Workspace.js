@@ -44,5 +44,5 @@ workspaceSchema.methods.getMemberRole = function (userId) {
   return m ? m.role : null;
 };
 
-const Workspace = mongoose.model("Workspace", workspaceSchema);
+const Workspace = mongoose.models.Workspace || mongoose.model("Workspace", workspaceSchema);
 export default Workspace;

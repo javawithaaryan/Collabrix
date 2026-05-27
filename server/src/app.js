@@ -18,13 +18,12 @@ import { errorHandler } from "./middleware/errorHandler.js";
 const app = express();
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || "*",
+  origin: process.env.CLIENT_URL || "http://localhost:5173",
   credentials: true,
 }));
 
 app.use(express.json({ limit: "1mb" }));
 
-// Only log requests in dev — keeps test output clean
 if (process.env.NODE_ENV !== "test") {
   app.use(morgan("dev"));
 }
@@ -44,12 +43,10 @@ app.use("/api/resources", resourceRoutes);
 app.use("/api/pulse", pulseRoutes);
 app.use("/api/collections", collectionRoutes);
 
-// 404 handler for any unmatched routes
 app.use((_req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
 
-// Must be last — catches errors thrown by controllers
 app.use(errorHandler);
 
 export default app;

@@ -3,7 +3,6 @@ import Workspace from "../models/workspace.js";
 import User from "../models/User.js";
 import { logPulseEvent } from "../services/pulseService.js";
 
-// Create workspace — creator becomes owner + first member
 export const createWorkspace = async (req, res, next) => {
   try {
     const { name, description } = req.body;
@@ -27,7 +26,6 @@ export const createWorkspace = async (req, res, next) => {
   }
 };
 
-// Get all workspaces the current user is a member of
 export const getWorkspaces = async (req, res, next) => {
   try {
     const workspaces = await Workspace.find({ "members.user": req.user._id })
@@ -41,7 +39,6 @@ export const getWorkspaces = async (req, res, next) => {
   }
 };
 
-// Get single workspace with members
 export const getWorkspace = async (req, res, next) => {
   try {
     const workspace = await Workspace.findById(req.params.id)
@@ -60,7 +57,6 @@ export const getWorkspace = async (req, res, next) => {
   }
 };
 
-// Generate invite link (returns token)
 export const createInviteLink = async (req, res, next) => {
   try {
     const workspace = await Workspace.findById(req.params.id);
@@ -70,7 +66,7 @@ export const createInviteLink = async (req, res, next) => {
     if (!isMember) return res.status(403).json({ success: false, message: "Access denied" });
 
     const token = crypto.randomBytes(20).toString("hex");
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     workspace.invites.push({ token, invitedBy: req.user._id, role: "member", expiresAt });
     await workspace.save();
@@ -81,7 +77,6 @@ export const createInviteLink = async (req, res, next) => {
   }
 };
 
-// Join workspace via invite token
 export const joinViaInvite = async (req, res, next) => {
   try {
     const { token } = req.params;
@@ -100,7 +95,6 @@ export const joinViaInvite = async (req, res, next) => {
       return res.status(410).json({ success: false, message: "Invite link has expired" });
     }
 
-    // Already a member?
     const alreadyMember = workspace.members.some((m) => m.user._id.toString() === req.user._id.toString());
     if (alreadyMember) {
       return res.status(200).json({ success: true, workspace, alreadyMember: true, message: "You are already a member" });
@@ -121,7 +115,6 @@ export const joinViaInvite = async (req, res, next) => {
   }
 };
 
-// Get workspace members
 export const getMembers = async (req, res, next) => {
   try {
     const workspace = await Workspace.findById(req.params.id)
@@ -139,7 +132,6 @@ export const getMembers = async (req, res, next) => {
   }
 };
 
-// Remove a member (owner/admin only)
 export const removeMember = async (req, res, next) => {
   try {
     const workspace = await Workspace.findById(req.params.id);
@@ -164,7 +156,6 @@ export const removeMember = async (req, res, next) => {
   }
 };
 
-// Get invite info (preview before joining)
 export const getInviteInfo = async (req, res, next) => {
   try {
     const { token } = req.params;
@@ -188,6 +179,41 @@ export const getInviteInfo = async (req, res, next) => {
       expired,
       expiresAt: invite.expiresAt,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const revokeInvite = async (req, res, next) => {
+  try {
+    const workspace = await Workspace.findById(req.params.id);
+    if (!workspace) return res.status(404).json({ success: false, message: "Workspace not found" });
+
+    const role = workspace.getMemberRole(req.user._id);
+    if (!role || (role !== "owner" && role !== "admin")) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    workspace.invites = workspace.invites.filter((inv) => inv.token !== req.params.token);
+    await workspace.save();
+    res.status(200).json({ success: true, message: "Invite revoked" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const resendInvite = async (req, res, next) => {
+  try {
+    const workspace = await Workspace.findById(req.params.id);
+    if (!workspace) return res.status(404).json({ success: false, message: "Workspace not found" });
+
+    const invite = workspace.invites.find((inv) => inv.token === req.params.token);
+    if (!invite) return res.status(404).json({ success: false, message: "Invite not found" });
+
+    invite.status = "pending";
+    invite.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await workspace.save();
+    res.status(200).json({ success: true, message: "Invite resent", expiresAt: invite.expiresAt });
   } catch (err) {
     next(err);
   }

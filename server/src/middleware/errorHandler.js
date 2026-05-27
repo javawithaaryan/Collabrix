@@ -4,7 +4,6 @@ export function errorHandler(err, req, res, next) {
   const status = err.status || err.statusCode || 500;
   const isDev = process.env.NODE_ENV !== "production";
 
-  // Never log to stdout in tests
   if (process.env.NODE_ENV !== "test") {
     console.error(`[${req.method}] ${req.path} → ${status}:`, err.message);
   }

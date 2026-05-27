@@ -1,28 +1,16 @@
 import Task from "../models/Task.js";
 import Comment from "../models/Comment.js";
 import Project from "../models/Project.js";
+import Workspace from "../models/Workspace.js";
 import { logPulseEvent } from "../services/pulseService.js";
 import { notifyWorkspaceMembers, createNotification } from "./notificationController.js";
 
-// Create a new task
 export const createTask = async (req, res, next) => {
   try {
     const {
-      title,
-      description,
-      project,
-      workspace,
-      priority,
-      assignee,
-      dueDate,
-      labels,
-      subtasks,
-      milestone,
-      suggestedOwner,
-      dependencies,
-      blockers,
-      reviewStage,
-      deployOrder,
+      title, description, project, workspace, priority, assignee,
+      dueDate, labels, subtasks, milestone, suggestedOwner,
+      dependencies, blockers, reviewStage, deployOrder,
     } = req.body;
 
     if (!title?.trim() || !project) {
@@ -32,8 +20,7 @@ export const createTask = async (req, res, next) => {
     const task = await Task.create({
       title: title.trim(),
       description: description?.trim() || "",
-      project,
-      workspace,
+      project, workspace,
       priority: priority || "medium",
       assignee: assignee || null,
       dueDate: dueDate || null,
@@ -53,7 +40,6 @@ export const createTask = async (req, res, next) => {
       .populate("resources")
       .lean();
 
-    // Trigger Task Created Notification
     try {
       let wsId = populated.workspace;
       if (!wsId) {
@@ -61,7 +47,7 @@ export const createTask = async (req, res, next) => {
         wsId = projectObj?.workspace;
       }
       if (wsId) {
-        notifyWorkspaceMembers({
+        await notifyWorkspaceMembers({
           workspaceId: wsId,
           type: "task_created",
           title: "New Task Created",
@@ -84,30 +70,25 @@ export const createTask = async (req, res, next) => {
   }
 };
 
-// Get all tasks for a project
 export const getTasks = async (req, res, next) => {
   try {
     const { projectId } = req.params;
-
     const tasks = await Task.find({ project: projectId })
       .populate("assignee createdBy", "name email avatar")
       .populate("resources")
       .sort({ createdAt: -1 })
       .lean();
-
     res.status(200).json(tasks);
   } catch (err) {
     next(err);
   }
 };
 
-// Update task details (status, assignee, description, labels, due date, etc.)
 export const updateTaskStatus = async (req, res, next) => {
   try {
     const { taskId } = req.params;
     const updates = req.body;
 
-    // Validate status if provided
     if (updates.status) {
       const validStatuses = ["todo", "in-progress", "done"];
       if (!validStatuses.includes(updates.status)) {
@@ -120,13 +101,23 @@ export const updateTaskStatus = async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Task not found" });
     }
 
+    // Check the user belongs to this task's workspace
+    const taskWorkspaceId = originalTask.workspace ||
+      (await Project.findById(originalTask.project))?.workspace;
+    if (taskWorkspaceId) {
+      const ws = await Workspace.findById(taskWorkspaceId).select("members").lean();
+      const isMember = ws?.members.some((m) => m.user.toString() === req.user._id.toString());
+      if (!isMember) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+    }
+
     const updated = await Task.findByIdAndUpdate(
       taskId,
       { $set: updates },
       { new: true, runValidators: true }
     ).populate("assignee createdBy", "name email avatar").populate("resources");
 
-    // If status has changed, log a high-fidelity Pulse event and notify workspace
     if (updates.status && updates.status !== originalTask.status) {
       try {
         let wsId = updated.workspace;
@@ -152,8 +143,7 @@ export const updateTaskStatus = async (req, res, next) => {
             io: req.app.get("io"),
           });
 
-          // Trigger Workspace Notification
-          notifyWorkspaceMembers({
+          await notifyWorkspaceMembers({
             workspaceId: wsId,
             type: updates.status === "done" ? "task_completed" : "task_moved",
             title: updates.status === "done" ? "Task Completed! 🎉" : "Task Status Moved",
@@ -171,7 +161,6 @@ export const updateTaskStatus = async (req, res, next) => {
       }
     }
 
-    // If assignee has changed, send a personal notification to the new assignee
     if (updates.assignee && updates.assignee !== originalTask.assignee?.toString()) {
       try {
         let wsId = updated.workspace;
@@ -180,7 +169,7 @@ export const updateTaskStatus = async (req, res, next) => {
           wsId = project?.workspace;
         }
 
-        createNotification({
+        await createNotification({
           userId: updates.assignee,
           type: "task_assigned",
           title: "New Task Assigned",
@@ -204,23 +193,19 @@ export const updateTaskStatus = async (req, res, next) => {
   }
 };
 
-// Get comments for a specific task
 export const getComments = async (req, res, next) => {
   try {
     const { taskId } = req.params;
-
     const comments = await Comment.find({ task: taskId })
       .populate("sender", "name email avatar")
       .sort({ createdAt: 1 })
       .lean();
-
     res.status(200).json(comments);
   } catch (err) {
     next(err);
   }
 };
 
-// Add a comment to a task
 export const addComment = async (req, res, next) => {
   try {
     const { taskId } = req.params;
@@ -240,7 +225,6 @@ export const addComment = async (req, res, next) => {
       .populate("sender", "name email avatar")
       .lean();
 
-    // Trigger Comment Notification
     try {
       const taskObj = await Task.findById(taskId);
       if (taskObj) {
@@ -249,9 +233,8 @@ export const addComment = async (req, res, next) => {
           const project = await Project.findById(taskObj.project);
           wsId = project?.workspace;
         }
-
         if (wsId) {
-          notifyWorkspaceMembers({
+          await notifyWorkspaceMembers({
             workspaceId: wsId,
             type: "comment",
             title: "New Task Comment",
@@ -275,7 +258,6 @@ export const addComment = async (req, res, next) => {
   }
 };
 
-// Get all tasks in a workspace
 export const getWorkspaceTasks = async (req, res, next) => {
   try {
     const { workspaceId } = req.params;
@@ -285,6 +267,24 @@ export const getWorkspaceTasks = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .lean();
     res.status(200).json(tasks);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteTask = async (req, res, next) => {
+  try {
+    const { taskId } = req.params;
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ success: false, message: "Task not found" });
+    }
+    if (task.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+    await Task.findByIdAndDelete(taskId);
+    await Comment.deleteMany({ task: taskId });
+    res.status(200).json({ success: true, message: "Task deleted" });
   } catch (err) {
     next(err);
   }
