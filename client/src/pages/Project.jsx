@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
@@ -27,7 +27,26 @@ const PRIORITY_STYLES = {
 };
 
 const Project = () => {
-  const { id } = useParams();
+  const { id: workspaceId, projectId } = useParams();
+  const navigate = useNavigate();
+
+  const [projects, setProjects] = useState([]);
+  const [activeProjectId, setActiveProjectId] = useState(projectId || "");
+  const id = activeProjectId;
+
+  // Load all projects in the workspace to select/fallback
+  useEffect(() => {
+    if (workspaceId) {
+      api.get(`/projects/${workspaceId}`)
+        .then((res) => {
+          setProjects(res.data || []);
+          if (res.data && res.data.length > 0 && !projectId) {
+            setActiveProjectId(res.data[0]._id);
+          }
+        })
+        .catch(err => console.error("Failed to load workspace projects:", err));
+    }
+  }, [workspaceId, projectId]);
 
   const [tasks, setTasks] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -76,13 +95,14 @@ const Project = () => {
 
   // ─── Data fetching ─────────────────────────────────────────────────────
   const fetchTasks = useCallback(async () => {
+    if (!id || id === workspaceId) return;
     try {
       const res = await api.get(`/tasks/${id}`);
       setTasks(res.data);
     } catch (err) {
       console.error("Failed to load tasks:", err.message);
     }
-  }, [id]);
+  }, [id, workspaceId]);
 
   // ─── Task creation ─────────────────────────────────────────────────────
   const createTask = async () => {
@@ -267,6 +287,10 @@ const Project = () => {
 
   // ─── Socket setup ──────────────────────────────────────────────────────
   useEffect(() => {
+    if (!id || id === workspaceId) {
+      setLoading(false);
+      return;
+    }
     fetchTasks().then(() => {
       setLoading(false);
       const params = new URLSearchParams(window.location.search);
@@ -600,10 +624,7 @@ const Project = () => {
   );
 
   return (
-    <div className="flex bg-black text-white min-h-screen">
-      <Sidebar />
-
-      <div className="flex-1 p-8 overflow-y-auto">
+    <div className="flex-1 p-8 overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8 border-b border-zinc-900 pb-5">
           <div>
@@ -921,7 +942,6 @@ const Project = () => {
           ))}
         </div>
       </div>
-    </div>
   );
 };
 

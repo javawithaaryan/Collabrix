@@ -12,6 +12,8 @@ import {
   getInviteInfo,
   revokeInvite,
   resendInvite,
+  updateWorkspace,
+  deleteWorkspace,
 } from "../controllers/workspaceController.js";
 
 const router = express.Router();
@@ -19,6 +21,8 @@ const router = express.Router();
 router.post("/", authMiddleware, createWorkspace);
 router.get("/", authMiddleware, getWorkspaces);
 router.get("/:id", authMiddleware, getWorkspace);
+router.put("/:id", authMiddleware, updateWorkspace);
+router.delete("/:id", authMiddleware, deleteWorkspace);
 router.get("/:id/members", authMiddleware, getMembers);
 router.get("/:id/invites", authMiddleware, getPendingInvites);
 router.post("/:id/invite", authMiddleware, createInviteLink);

@@ -1,4 +1,4 @@
-﻿import crypto from "crypto";
+import crypto from "crypto";
 import Workspace from "../models/Workspace.js";
 import User from "../models/User.js";
 import Project from "../models/Project.js";
@@ -321,6 +321,76 @@ export const resendInvite = async (req, res, next) => {
       role: invite.role,
       email: invite.email || null,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Update workspace settings (name, description) — restricted to Owner/Admin
+export const updateWorkspace = async (req, res, next) => {
+  try {
+    const { name, description } = req.body;
+    const workspace = await Workspace.findById(req.params.id);
+    if (!workspace) return res.status(404).json({ success: false, message: "Workspace not found" });
+
+    const requesterRole = workspace.getMemberRole(req.user._id);
+    if (!requesterRole || (requesterRole !== "owner" && requesterRole !== "admin")) {
+      return res.status(403).json({ success: false, message: "Only owners and admins can update workspace settings" });
+    }
+
+    if (name !== undefined) workspace.name = name.trim();
+    if (description !== undefined) workspace.description = description.trim();
+
+    await workspace.save();
+
+    const updated = await Workspace.findById(workspace._id)
+      .populate("members.user", "name email")
+      .populate("owner", "name email")
+      .lean();
+
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`workspace:${workspace._id}`).emit("workspace:updated", updated);
+    }
+
+    await logPulseEvent({
+      workspaceId: workspace._id,
+      actorId: req.user._id,
+      actorName: req.user.name,
+      type: "workspace_updated",
+      content: `${req.user.name} updated workspace settings`,
+      importance: "medium",
+      io,
+    });
+
+    res.status(200).json(updated);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Delete workspace — owner only
+export const deleteWorkspace = async (req, res, next) => {
+  try {
+    const workspace = await Workspace.findById(req.params.id);
+    if (!workspace) return res.status(404).json({ success: false, message: "Workspace not found" });
+
+    const requesterRole = workspace.getMemberRole(req.user._id);
+    const isOwner = requesterRole === "owner" || workspace.owner.toString() === req.user._id.toString();
+    if (!isOwner) {
+      return res.status(403).json({ success: false, message: "Only the owner can delete the workspace" });
+    }
+
+    // Delete associated projects, and the workspace itself
+    await Project.deleteMany({ workspace: workspace._id });
+    await Workspace.findByIdAndDelete(workspace._id);
+
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`workspace:${workspace._id}`).emit("workspace:deleted", { workspaceId: workspace._id });
+    }
+
+    res.status(200).json({ success: true, message: "Workspace and its resources deleted successfully" });
   } catch (err) {
     next(err);
   }

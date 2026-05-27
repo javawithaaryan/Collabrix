@@ -140,10 +140,7 @@ export default function Pulse() {
   const processedEvents = groupEvents(events);
 
   return (
-    <div className="flex bg-black text-white min-h-screen">
-      <Sidebar />
-
-      <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 p-8 overflow-y-auto scrollbar-thin flex flex-col gap-6">
           <div className="border-b border-zinc-900 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -330,10 +327,8 @@ export default function Pulse() {
                   <p className="text-[10px] text-zinc-600 italic">No workspace diagnostics generated yet.</p>
                 )}
               </div>
-            </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }

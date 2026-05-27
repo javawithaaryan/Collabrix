@@ -134,23 +134,17 @@ const Workspace = () => {
 
   if (loading) {
     return (
-      <div className="flex bg-black text-white min-h-screen">
-        <Sidebar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-3 text-zinc-550">
-            <span className="w-6 h-6 border-2 border-zinc-800 border-t-zinc-400 rounded-full animate-spin" />
-            <span className="font-mono text-xs">Loading operational timeline...</span>
-          </div>
+      <div className="flex-1 flex items-center justify-center min-h-[50vh]">
+        <div className="flex items-center gap-3 text-slate-550">
+          <span className="w-6 h-6 border-2 border-slate-800 border-t-indigo-500 rounded-full animate-spin" />
+          <span className="font-mono text-xs text-slate-400">Loading operational timeline...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex bg-black text-white min-h-screen">
-      <Sidebar />
-
-      <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden">
         {/* Main Dashboard Workspace Content */}
         <div className="flex-1 p-8 overflow-y-auto scrollbar-thin">
           {/* Header */}
@@ -379,7 +373,6 @@ const Workspace = () => {
           />
         </div>
       </div>
-    </div>
   );
 };
 

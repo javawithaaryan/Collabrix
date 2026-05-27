@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -15,7 +15,15 @@ import Snippets from "./pages/Snippets";
 import CodeReview from "./pages/CodeReview";
 import Billing from "./pages/Billing";
 
+import Tasks from "./pages/Tasks";
+import Chat from "./pages/Chat";
+import Notifications from "./pages/Notifications";
+import Activity from "./pages/Activity";
+import Settings from "./pages/Settings";
+import SprintPlanner from "./pages/SprintPlanner";
+
 import ProtectedRoute from "./components/ProtectedRoute";
+import AppShell from "./components/layouts/AppShell";
 
 const router = createBrowserRouter([
   {
@@ -43,76 +51,100 @@ const router = createBrowserRouter([
   },
 
   {
+    path: "/join/:token",
+    element: <JoinWorkspace />,
+  },
+
+  {
     path: "/workspace/:id",
     element: (
       <ProtectedRoute>
-        <Workspace />
+        <AppShell />
       </ProtectedRoute>
     ),
-  },
-
-  {
-    path: "/workspace/:id/resources",
-    element: (
-      <ProtectedRoute>
-        <ResourceHub />
-      </ProtectedRoute>
-    ),
-  },
-
-  {
-    path: "/workspace/:id/pulse",
-    element: (
-      <ProtectedRoute>
-        <Pulse />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/workspace/:id/wiki",
-    element: (
-      <ProtectedRoute>
-        <Wiki />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/workspace/:id/snippets",
-    element: (
-      <ProtectedRoute>
-        <Snippets />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/workspace/:id/code-review",
-    element: (
-      <ProtectedRoute>
-        <CodeReview />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/workspace/:id/billing",
-    element: (
-      <ProtectedRoute>
-        <Billing />
-      </ProtectedRoute>
-    ),
+    children: [
+      {
+        index: true,
+        element: <Navigate to="dashboard" replace />,
+      },
+      {
+        path: "dashboard",
+        element: <Workspace />,
+      },
+      {
+        path: "projects",
+        element: <Workspace />,
+      },
+      {
+        path: "kanban",
+        element: <Project />,
+      },
+      {
+        path: "kanban/:projectId",
+        element: <Project />,
+      },
+      {
+        path: "tasks",
+        element: <Tasks />,
+      },
+      {
+        path: "chat",
+        element: <Chat />,
+      },
+      {
+        path: "chat/:projectId",
+        element: <Chat />,
+      },
+      {
+        path: "resources",
+        element: <ResourceHub />,
+      },
+      {
+        path: "pulse",
+        element: <Pulse />,
+      },
+      {
+        path: "wiki",
+        element: <Wiki />,
+      },
+      {
+        path: "snippets",
+        element: <Snippets />,
+      },
+      {
+        path: "code-review",
+        element: <CodeReview />,
+      },
+      {
+        path: "billing",
+        element: <Billing />,
+      },
+      {
+        path: "activity",
+        element: <Activity />,
+      },
+      {
+        path: "notifications",
+        element: <Notifications />,
+      },
+      {
+        path: "settings",
+        element: <Settings />,
+      },
+      {
+        path: "sprint-planner",
+        element: <SprintPlanner />,
+      },
+    ],
   },
 
   {
     path: "/project/:id",
     element: (
       <ProtectedRoute>
-        <Project />
+        <Navigate to={`/workspace/active/kanban/:id`} replace />
       </ProtectedRoute>
     ),
-  },
-
-  {
-    path: "/join/:token",
-    element: <JoinWorkspace />,
   },
 
   {

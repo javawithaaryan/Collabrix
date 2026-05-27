@@ -29,11 +29,19 @@ export const createTask = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Title and project are required" });
     }
 
+    let resolvedWorkspace = workspace;
+    if (!resolvedWorkspace) {
+      const projectObj = await Project.findById(project);
+      if (projectObj) {
+        resolvedWorkspace = projectObj.workspace;
+      }
+    }
+
     const task = await Task.create({
       title: title.trim(),
       description: description?.trim() || "",
       project,
-      workspace,
+      workspace: resolvedWorkspace,
       priority: priority || "medium",
       assignee: assignee || null,
       dueDate: dueDate || null,
@@ -279,7 +287,17 @@ export const addComment = async (req, res, next) => {
 export const getWorkspaceTasks = async (req, res, next) => {
   try {
     const { workspaceId } = req.params;
-    const tasks = await Task.find({ workspace: workspaceId })
+    
+    // Find all project IDs belonging to this workspace to search tasks by project too
+    const projects = await Project.find({ workspace: workspaceId }).select("_id");
+    const projectIds = projects.map((p) => p._id);
+
+    const tasks = await Task.find({
+      $or: [
+        { workspace: workspaceId },
+        { project: { $in: projectIds } }
+      ]
+    })
       .populate("assignee createdBy", "name email avatar")
       .populate("resources")
       .sort({ createdAt: -1 })
