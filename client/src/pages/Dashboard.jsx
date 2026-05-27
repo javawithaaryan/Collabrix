@@ -29,6 +29,7 @@ const Dashboard = () => {
 
   const [workspaceName, setWorkspaceName] = useState("");
   const [workspaces, setWorkspaces] = useState([]);
+  const [pulseEvents, setPulseEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
@@ -36,10 +37,21 @@ const Dashboard = () => {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+  const fetchPulse = async (wsId) => {
+    try {
+      const res = await api.get(`/pulse/workspace/${wsId}?limit=5`);
+      setPulseEvents(res.data.events || []);
+    } catch (_) {}
+  };
+
   const fetchWorkspaces = async () => {
     try {
       const res = await api.get("/workspaces");
       setWorkspaces(res.data);
+      if (res.data.length > 0) {
+        const activeId = localStorage.getItem("activeWorkspaceId") || res.data[0]._id;
+        fetchPulse(activeId);
+      }
     } catch (err) {
       console.error("Failed to load workspaces:", err.message);
       setError("Could not load workspaces. Please refresh.");
@@ -273,21 +285,32 @@ const Dashboard = () => {
 
             {/* Workspace Highlights Ledger */}
             <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-5 hover:border-zinc-850 transition">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-zinc-550 mb-3 select-none">Recent Milestones</h3>
+              <h3 className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-550 mb-3 select-none font-mono">Recent Pulse</h3>
               <div className="flex flex-col gap-3 font-mono text-[9px]">
-                {[
-                  { event: "AI generated food delivery app sprint", time: "2h ago", icon: "✨" },
-                  { event: "Stripe payment controller test passed", time: "4h ago", icon: "✓" },
-                  { event: "Joined workspace 'Startup MVP'", time: "1d ago", icon: "📨" },
-                ].map((item, index) => (
-                  <div key={index} className="flex items-start gap-2 text-zinc-500">
-                    <span className="text-[10px] select-none">{item.icon}</span>
-                    <div className="flex-1">
-                      <p className="leading-snug text-zinc-400">{item.event}</p>
-                      <span className="text-zinc-650 text-[8px]">{item.time}</span>
-                    </div>
-                  </div>
-                ))}
+                {pulseEvents.length === 0 ? (
+                  <p className="text-zinc-600 italic leading-snug">No recent operations logged. Seeding AI sprints or updating boards triggers Pulse timelines.</p>
+                ) : (
+                  pulseEvents.slice(0, 5).map((item) => {
+                    const iconMap = {
+                      sprint_generated: "✨",
+                      task_moved: "📋",
+                      resource_shared: "📚",
+                      workspace_created: "📨",
+                      milestone_reached: "🎉",
+                      temporal_summary: "📈",
+                    };
+                    const icon = iconMap[item.type] || "⚡";
+                    return (
+                      <div key={item._id} className="flex items-start gap-2 text-zinc-500 hover:text-zinc-300 transition duration-200">
+                        <span className="text-[10px] select-none">{icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="leading-snug text-zinc-400 truncate">{item.content}</p>
+                          <span className="text-zinc-650 text-[8px]">{timeAgo(item.createdAt)}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

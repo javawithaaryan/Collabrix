@@ -93,12 +93,20 @@ const Sidebar = () => {
         <nav className="flex-1 p-4 flex flex-col gap-1.5 overflow-y-auto scrollbar-thin">
           <NavLink to="/dashboard" icon="📊" label="Dashboard" active={isActive("/dashboard")} />
           {activeWorkspaceId && (
-            <NavLink
-              to={`/workspace/${activeWorkspaceId}/resources`}
-              icon="📚"
-              label="Resource Hub"
-              active={isActive(`/workspace/${activeWorkspaceId}/resources`)}
-            />
+            <>
+              <NavLink
+                to={`/workspace/${activeWorkspaceId}/resources`}
+                icon="📚"
+                label="Resource Hub"
+                active={isActive(`/workspace/${activeWorkspaceId}/resources`)}
+              />
+              <NavLink
+                to={`/workspace/${activeWorkspaceId}/pulse`}
+                icon="⚡"
+                label="Pulse Timeline"
+                active={isActive(`/workspace/${activeWorkspaceId}/pulse`)}
+              />
+            </>
           )}
         </nav>
 

@@ -9,6 +9,7 @@ import Project from "./pages/Project";
 import NotFound from "./pages/NotFound";
 import JoinWorkspace from "./pages/JoinWorkspace";
 import ResourceHub from "./pages/ResourceHub";
+import Pulse from "./pages/Pulse";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -51,6 +52,15 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ResourceHub />
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    path: "/workspace/:id/pulse",
+    element: (
+      <ProtectedRoute>
+        <Pulse />
       </ProtectedRoute>
     ),
   },
