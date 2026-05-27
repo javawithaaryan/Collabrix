@@ -4,6 +4,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/providers/theme-provider"
 import { AppShell } from "@/components/layout/app-shell"
 import { AiDrawer } from "@/features/ai/ai-drawer";
+import { ClerkProvider } from '@clerk/nextjs'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -18,21 +19,23 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          {/* AppShell is the container that holds your Sidebar and Navbar */}
-          {/* {children} is whatever page you are currently viewing (Dashboard, Board, etc.) */}
-          <AppShell>{children}</AppShell>
-          {/* 2. This sits ready to slide over top of the page */}
-          <AiDrawer />
-        </ThemeProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body className={`${inter.className} antialiased`}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            {/* AppShell is the container that holds your Sidebar and Navbar */}
+            <AppShell>{children}</AppShell>
+            
+            {/* This sits ready to slide over top of the page */}
+            <AiDrawer />
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }

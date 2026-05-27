@@ -1,40 +1,35 @@
-"use client" // <--- 1. This must be the absolute first line
+import { UserButton } from "@clerk/nextjs";
+import Link from "next/link";
 
-import React from "react"
-import { Sparkles } from "lucide-react"
-// ... your other imports
-import { useAiStore } from "@/stores/ai-store" // <--- 2. Import the store
-
-export function AppShell({ children }: { children: React.ReactNode }) {
-  
-  const { openDrawer } = useAiStore() // <--- 3. Initialize the hook
-
+export function Navbar() {
   return (
-    <div className="flex h-screen w-full">
-      {/* ... your sidebar code ... */}
+    <nav className="w-full h-14 px-6 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between shrink-0">
+      
+      {/* Left Side: Brand & Logo */}
+      <Link href="/" className="flex items-center gap-2 text-zinc-100 font-bold tracking-tight text-lg transition-opacity hover:opacity-80">
+        <div className="w-6 h-6 bg-indigo-500 rounded-md flex items-center justify-center shadow-sm shadow-indigo-500/20">
+          <span className="text-white text-xs font-black">C</span>
+        </div>
+        Collabrix
+      </Link>
 
-      <div className="flex flex-col flex-1">
-        {/* THIS IS YOUR HEADER AREA */}
-        <header className="flex items-center justify-between p-4 border-b border-zinc-800">
-          <div>{/* Search bar or breadcrumbs usually go here */}</div>
-          
-          {/* 4. DROP THE BUTTON HERE! */}
-          <button 
-            onClick={() => {
-              alert("1. THE BUTTON WORKS!");
-              openDrawer();
-            }}
-            className="flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-3 py-1.5 rounded-lg border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Ask AI</span>
-          </button>
-        </header>
-
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+      {/* Right Side: Navigation Links & User Profile */}
+      <div className="flex items-center gap-4">
+        
+        {/* The Clerk User Profile Dropdown (v6 Compatible) */}
+        <UserButton 
+          appearance={{
+            elements: {
+              userButtonAvatarBox: "w-8 h-8 rounded-md border border-zinc-800 shadow-sm",
+              userButtonPopoverCard: "bg-zinc-950 border border-zinc-800 shadow-2xl",
+              userButtonPopoverActionButton: "hover:bg-zinc-900 text-zinc-300 transition-colors",
+              userButtonPopoverActionButtonText: "text-zinc-300 font-medium",
+              userPreviewSecondaryIdentifier: "text-zinc-500",
+              userPreviewMainIdentifier: "text-zinc-200 font-semibold"
+            }
+          }}
+        />
       </div>
-    </div>
-  )
+    </nav>
+  );
 }

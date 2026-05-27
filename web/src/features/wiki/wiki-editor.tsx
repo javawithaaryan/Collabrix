@@ -8,6 +8,7 @@ import TaskList from "@tiptap/extension-task-list"
 import TaskItem from "@tiptap/extension-task-item"
 import { Bold, Italic, List, ListOrdered, CheckSquare, Quote, Heading2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { WikiToolbar } from "./wiki-toolbar"
 
 export function WikiEditor() {
   const editor = useEditor({
@@ -62,7 +63,7 @@ export function WikiEditor() {
 
   return (
     <div className="flex flex-col h-full bg-zinc-950 rounded-xl border border-zinc-800 p-6 shadow-sm">
-      <MenuBar />
+      <WikiToolbar editor={editor} />
       <div className="flex-1 overflow-y-auto custom-scrollbar pr-4">
         <EditorContent editor={editor} />
       </div>

@@ -4,6 +4,9 @@ import React from "react"
 import { Search, Plus } from "lucide-react"
 import { useSnippetStore } from "@/stores/snippet-store"
 import { SnippetCard } from "@/features/snippets/snippet-card"
+import { WikiEditor } from "@/features/wiki/wiki-editor"
+
+
 
 export default function SnippetsPage() {
   const { snippets, searchQuery, setSearchQuery } = useSnippetStore()
