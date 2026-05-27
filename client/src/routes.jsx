@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Workspace from "./pages/Workspace";
 import Project from "./pages/Project";
 import NotFound from "./pages/NotFound";
+import JoinWorkspace from "./pages/JoinWorkspace";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -51,6 +52,11 @@ const router = createBrowserRouter([
         <Project />
       </ProtectedRoute>
     ),
+  },
+
+  {
+    path: "/join/:token",
+    element: <JoinWorkspace />,
   },
 
   {
