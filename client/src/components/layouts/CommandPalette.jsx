@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { projectService } from "../../services/project.service";
 import { taskService } from "../../services/task.service";
 import { resourceService } from "../../services/resource.service";
+import { wikiService } from "../../services/wiki.service";
+import { isObjectId, workspacePath } from "../../utils/workspaceRoutes";
 
 export default function CommandPalette({ isOpen, onClose }) {
   const { id: workspaceId } = useParams();
@@ -16,6 +18,8 @@ export default function CommandPalette({ isOpen, onClose }) {
     projects: [],
     tasks: [],
     resources: [],
+    wikis: [],
+    members: [],
   });
 
   const inputRef = useRef(null);
@@ -23,21 +27,25 @@ export default function CommandPalette({ isOpen, onClose }) {
 
   // Load all workspace resources when opened
   useEffect(() => {
-    if (!isOpen || !workspaceId) return;
+    if (!isOpen || !isObjectId(workspaceId)) return;
 
     const loadSearchData = async () => {
       setLoading(true);
       try {
-        const [projects, tasks, resources] = await Promise.all([
+        const [projects, tasks, resources, wikiData, wsData] = await Promise.all([
           projectService.getProjectsByWorkspace(workspaceId).catch(() => []),
           taskService.getTasksByWorkspace(workspaceId).catch(() => []),
           resourceService.getResources(workspaceId).catch(() => []),
+          wikiService.getWorkspaceWikis(workspaceId).catch(() => ({ wikis: [] })),
+          import("../../lib/axios").then(m => m.default.get(`/workspaces/${workspaceId}`)).catch(() => ({ data: {} })),
         ]);
 
         setDataStore({
           projects: projects || [],
           tasks: tasks || [],
           resources: resources || [],
+          wikis: wikiData?.wikis || [],
+          members: wsData?.data?.members || [],
         });
       } catch (err) {
         console.error("Failed to load command palette data:", err);
@@ -66,6 +74,10 @@ export default function CommandPalette({ isOpen, onClose }) {
 
     const q = query.toLowerCase();
     const tempResults = [];
+    const openWorkspacePath = (section) => {
+      const path = workspacePath(workspaceId, section);
+      if (path) navigate(path);
+    };
 
     // Search Projects
     dataStore.projects.forEach((p) => {
@@ -76,7 +88,7 @@ export default function CommandPalette({ isOpen, onClose }) {
           subtitle: p.description || "Project",
           type: "Project",
           icon: "📁",
-          action: () => navigate(`/workspace/${workspaceId}/kanban?project=${p._id}`),
+          action: () => openWorkspacePath(`kanban?project=${p._id}`),
         });
       }
     });
@@ -90,37 +102,63 @@ export default function CommandPalette({ isOpen, onClose }) {
           subtitle: `Task in state: ${t.status?.toUpperCase()}`,
           type: "Task",
           icon: "☑️",
-          action: () => navigate(`/workspace/${workspaceId}/kanban?task=${t._id}`),
+          action: () => openWorkspacePath(`kanban?task=${t._id}`),
         });
       }
     });
 
-    // Search Resources (Wiki, Snippets, Links)
+    // Search Resources
     dataStore.resources.forEach((r) => {
-      if (r.title?.toLowerCase().includes(q) || r.content?.toLowerCase().includes(q) || r.tags?.some(tag => tag.toLowerCase().includes(q))) {
-        const typeLabel = r.type ? r.type.charAt(0).toUpperCase() + r.type.slice(1) : "Resource";
-        let icon = "📚";
-        let path = `/workspace/${workspaceId}/resources`;
-        if (r.type === "wiki") {
-          icon = "📖";
-          path = `/workspace/${workspaceId}/wiki`;
-        } else if (r.type === "snippet") {
-          icon = "💻";
-          path = `/workspace/${workspaceId}/snippets`;
-        }
-
+      if (r.title?.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q) || r.tags?.some(tag => tag.toLowerCase().includes(q))) {
         tempResults.push({
           id: r._id,
           title: r.title,
-          subtitle: r.description || `${typeLabel} item`,
-          type: typeLabel,
-          icon,
-          action: () => navigate(path),
+          subtitle: r.description || "Resource",
+          type: "Resource",
+          icon: "📚",
+          action: () => openWorkspacePath("resources"),
         });
       }
     });
 
-    setResults(tempResults.slice(0, 8)); // limit to top 8
+    // Search Wiki docs
+    dataStore.wikis.forEach((w) => {
+      if (
+        w.title?.toLowerCase().includes(q) ||
+        w.content?.toLowerCase().includes(q) ||
+        w.summary?.toLowerCase().includes(q) ||
+        w.category?.toLowerCase().includes(q) ||
+        w.tags?.some(tag => tag.toLowerCase().includes(q)) ||
+        w.author?.name?.toLowerCase().includes(q)
+      ) {
+        tempResults.push({
+          id: w._id,
+          title: w.title,
+          subtitle: w.summary || w.category || "Wiki doc",
+          type: "Wiki",
+          icon: "📖",
+          action: () => openWorkspacePath("wiki"),
+        });
+      }
+    });
+
+    // Search Members
+    dataStore.members.forEach((m) => {
+      const name = m.user?.name || "";
+      const email = m.user?.email || "";
+      if (name.toLowerCase().includes(q) || email.toLowerCase().includes(q)) {
+        tempResults.push({
+          id: m.user?._id || m._id,
+          title: name,
+          subtitle: `${email} · ${m.role}`,
+          type: "Member",
+          icon: "👤",
+          action: () => openWorkspacePath("settings?tab=members"),
+        });
+      }
+    });
+
+    setResults(tempResults.slice(0, 10)); // limit to top 10
     setSelectedIndex(0);
   }, [query, dataStore, navigate, workspaceId]);
 

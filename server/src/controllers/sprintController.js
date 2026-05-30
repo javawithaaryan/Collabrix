@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Project from "../models/Project.js";
+import Task from "../models/Task.js";
 import { logPulseEvent } from "../services/pulseService.js";
 import { notifyWorkspaceMembers } from "./notificationController.js";
 
@@ -591,40 +592,31 @@ Return ONLY raw JSON — no markdown, no backticks, no extra text. The JSON must
 
 {
   "projectType": "short project type label",
+  "epics": [
+    { "name": "Authentication Epic", "description": "Implement robust user identity and access management" }
+  ],
   "milestones": [
-    { "name": "Foundation", "description": "Core infrastructure and auth", "order": 1 },
-    { "name": "Core Features", "description": "Main product features", "order": 2 },
-    { "name": "Polish & Launch", "description": "Testing, optimization, deployment", "order": 3 }
+    { "name": "Foundation", "description": "Core infrastructure and auth", "order": 1 }
   ],
   "tasks": [
     {
       "title": "Set up Express server with MongoDB",
       "description": "Initialize Node.js project, configure Express middleware, connect to MongoDB Atlas, set up environment variables",
+      "type": "Story",
+      "epic": "Authentication Epic",
       "priority": "high",
+      "complexity": "Medium",
+      "estimates": "3 days",
       "milestone": "Foundation",
       "labels": ["backend", "infrastructure"],
       "subtasks": ["Install dependencies", "Configure dotenv", "Connect MongoDB", "Add CORS middleware"],
+      "acceptanceCriteria": ["Server starts without errors", "Connects to MongoDB successfully"],
       "timeline": "Day 1",
       "suggestedOwner": "Backend Dev",
       "dependencies": [],
       "blockers": [],
       "reviewStage": "PR Review & CI Validation",
       "deployOrder": 1,
-      "status": "todo"
-    },
-    {
-      "title": "Build authentication UI screens",
-      "description": "Create login, register, and forgot-password screens with form validation, error toasts, and redirect logic.",
-      "priority": "high",
-      "milestone": "Foundation",
-      "labels": ["frontend", "auth"],
-      "subtasks": ["Login form", "Register form", "Form validation"],
-      "timeline": "Day 3",
-      "suggestedOwner": "Frontend Dev",
-      "dependencies": ["Set up Express server with MongoDB"],
-      "blockers": ["Set up Express server with MongoDB"],
-      "reviewStage": "PR Review",
-      "deployOrder": 2,
       "status": "todo"
     }
   ]
@@ -633,8 +625,10 @@ Return ONLY raw JSON — no markdown, no backticks, no extra text. The JSON must
 Rules:
 - priority must be one of: "low", "medium", "high"
 - status must always be "todo"
+- type must be "Epic", "Story", or "Task"
 - milestone must exactly match one of the milestone names you defined
 - subtasks must be an array of short strings (not objects)
+- acceptanceCriteria must be an array of strings
 - labels must be an array of strings
 - dependencies must be an array of strings representing task titles that this task depends on (from the list of tasks you generate).
 - blockers must be an array of strings representing task titles that block this task (from the list of tasks you generate). If no task blocks this one, return an empty array.
@@ -684,13 +678,53 @@ Rules:
 
       const decorated = decorateSprintWithDependencies({
         projectType: parsed.projectType || "software project",
+        epics: parsed.epics || [],
         milestones: parsed.milestones,
         tasks: parsed.tasks,
       });
 
+      let createdTasks = [];
       try {
         const project = await Project.findById(projectId);
         if (project) {
+          // Auto-create tasks in the database! "No manual transfer"
+          const dbTasks = [];
+          for (const t of decorated.tasks) {
+            const newTask = new Task({
+              title: t.title,
+              description: t.description || "",
+              type: t.type || "Task",
+              epic: t.epic || "",
+              complexity: t.complexity || "",
+              estimates: t.estimates || "",
+              acceptanceCriteria: Array.isArray(t.acceptanceCriteria) ? t.acceptanceCriteria : [],
+              project: projectId,
+              priority: t.priority || "medium",
+              labels: t.labels || [],
+              milestone: t.milestone || "",
+              suggestedOwner: t.suggestedOwner || "",
+              dependencies: t.dependencies || [],
+              blockers: t.blockers || [],
+              reviewStage: t.reviewStage || "",
+              deployOrder: t.deployOrder || 0,
+              subtasks: (t.subtasks || []).map((s) => (typeof s === "string" ? { title: s, isCompleted: false } : s)),
+              status: "todo",
+              createdBy: req.user?._id
+            });
+            const saved = await newTask.save();
+            dbTasks.push(saved);
+          }
+          createdTasks = dbTasks;
+          
+          // Emit socket event for board updates
+          if (req.app.get("io")) {
+             req.app.get("io").to(projectId.toString()).emit("tasks-ai-generated", {
+               projectId,
+               count: createdTasks.length,
+               actorName: req.user?.name || "AI Planner"
+             });
+          }
+
           await logPulseEvent({
             workspaceId: project.workspace,
             actorId: req.user?._id,
@@ -722,6 +756,7 @@ Rules:
       return res.status(200).json({
         success: true,
         isFallback: false,
+        createdTasks: createdTasks.length,
         ...decorated,
       });
     } catch (err) {

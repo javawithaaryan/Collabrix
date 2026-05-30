@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { notificationService } from "../services/notification.service";
 import { useSocket } from "./SocketContext";
 import { useAuth } from "./AuthContext";
+import { isObjectId, workspacePath } from "../utils/workspaceRoutes";
 
 const NotificationContext = createContext();
 
@@ -81,8 +82,8 @@ export const NotificationProvider = ({ children }) => {
       
       // Configure target routes for deep linking
       let link = null;
-      if (notif.projectId) {
-        link = `/workspace/${notif.workspaceId || "active"}/kanban/${notif.projectId}`;
+      if (notif.projectId && isObjectId(notif.workspaceId)) {
+        link = workspacePath(notif.workspaceId, `kanban/${notif.projectId}`);
         if (notif.taskId) {
           link += `?task=${notif.taskId}`;
         }

@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 
@@ -7,11 +7,14 @@ import workspaceRoutes from "./routes/workspaces.js";
 import projectRoutes from "./routes/projects.js";
 import taskRoutes from "./routes/tasks.js";
 import messageRoutes from "./routes/messages.js";
+import chatRoutes from "./routes/chat.js";
 import aiRoutes from "./routes/ai.js";
-import notificationRoutes from "./routes/notifications.js";
 import resourceRoutes from "./routes/resources.js";
-import pulseRoutes from "./routes/pulse.js";
 import collectionRoutes from "./routes/collections.js";
+import notificationRoutes from "./routes/notifications.js";
+import pulseRoutes from "./routes/pulse.js";
+import wikiRoutes from "./routes/wiki.js";
+import seedRoutes from "./routes/seed.routes.js";
 
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -189,13 +192,13 @@ app.use(
 );
 
 app.use(
-  "/api/ai",
-  aiRoutes
+  "/api/chat",
+  chatRoutes
 );
 
 app.use(
-  "/api/notifications",
-  notificationRoutes
+  "/api/ai",
+  aiRoutes
 );
 
 app.use(
@@ -204,13 +207,28 @@ app.use(
 );
 
 app.use(
+  "/api/collections",
+  collectionRoutes
+);
+
+app.use(
+  "/api/notifications",
+  notificationRoutes
+);
+
+app.use(
   "/api/pulse",
   pulseRoutes
 );
 
 app.use(
-  "/api/collections",
-  collectionRoutes
+  "/api/wiki",
+  wikiRoutes
+);
+
+app.use(
+  "/api/seed",
+  seedRoutes
 );
 
 /*

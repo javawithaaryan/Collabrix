@@ -1,23 +1,5 @@
 import mongoose from "mongoose";
 
-const resourceCommentSchema = new mongoose.Schema(
-  {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    userName: { type: String, required: true },
-    text: { type: String, required: true, trim: true },
-    type: { type: String, enum: ["note", "warning", "caveat", "solution"], default: "note" },
-    solvedIndicator: { type: Boolean, default: false },
-    reactions: [
-      {
-        emoji: { type: String },
-        users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-      }
-    ],
-    createdAt: { type: Date, default: Date.now },
-  },
-  { _id: true }
-);
-
 const resourceSchema = new mongoose.Schema(
   {
     title: {
@@ -25,115 +7,215 @@ const resourceSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
     description: {
       type: String,
       default: "",
-      trim: true,
     },
-    url: {
+
+    summary: {
       type: String,
-      trim: true,
       default: "",
     },
+
+    url: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    category: {
+      type: String,
+      enum: [
+        "backend",
+        "frontend",
+        "devops",
+        "security",
+        "auth",
+        "authentication",
+        "database",
+        "ai",
+        "cloud",
+        "realtime",
+        "system-design",
+        "performance",
+        "open-source",
+        "ui-inspiration",
+        "bug-fix",
+        "architecture",
+        "deployment",
+        "other",
+        "Backend",
+        "Frontend",
+        "DevOps",
+        "Security",
+        "Authentication",
+        "Database",
+        "AI",
+        "Cloud",
+        "Realtime",
+        "System Design",
+        "Performance",
+        "Open Source",
+      ],
+      required: true,
+      default: "other",
+    },
+
+    resourceType: {
+      type: String,
+      enum: [
+        "GitHub Repo",
+        "Documentation",
+        "Article",
+        "Video",
+        "Tutorial",
+        "Prompt",
+        "Bug Fix",
+        "Deployment Guide",
+        "Tool",
+        "Library",
+        "Code Snippet",
+        "Wiki",
+        "code-snippet",
+        "article",
+        "docs"
+      ],
+      default: "Documentation",
+    },
+
     type: {
       type: String,
-      enum: ["url", "github", "docs", "youtube", "tweet", "article", "code-snippet", "ai-prompt", "bug-fix", "image", "other"],
       default: "url",
     },
+
     favicon: {
       type: String,
       default: "",
     },
+
     previewImage: {
       type: String,
       default: "",
     },
+
     domain: {
       type: String,
       default: "",
     },
-    codeSnippet: {
-      type: String,
-      default: "",
-    },
-    aiPrompt: {
-      type: String,
-      default: "",
-    },
-    category: {
-      type: String,
-      enum: ["backend", "auth", "deployment", "security", "realtime", "performance", "ui-inspiration", "ai", "bug-fix", "architecture", "database", "devops", "other"],
-      default: "other",
-    },
-    tags: {
-      type: [String],
-      default: [],
-    },
+
     suggestedTags: {
       type: [String],
       default: [],
     },
+
+    aiPrompt: {
+      type: String,
+      default: "",
+    },
+
+    rawMetadata: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+
+    tags: {
+      type: [String],
+      default: [],
+    },
+
+    collection: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ResourceCollection",
+      default: null,
+    },
+
     workspace: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Workspace",
-      required: true,
-      index: true,
-    },
-    project: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Project",
       default: null,
     },
-    tasks: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Task",
-      },
-    ],
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    isPrivate: {
-      type: Boolean,
-      default: false,
+
+    upvotes: {
+      type: Number,
+      default: 0,
     },
-    isPinned: {
-      type: Boolean,
-      default: false,
+
+    upvoters: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
     },
-    usageMetadata: [
-      {
-        text: { type: String, required: true },
-        contextType: { type: String, enum: ["sprint", "task", "fix", "deploy", "other"], default: "other" },
-      }
-    ],
+
+    saves: {
+      type: Number,
+      default: 0,
+    },
+
+    savers: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
+    },
+
     views: {
       type: Number,
       default: 0,
     },
-    viewedBy: [
+
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
+
+    featured: {
+      type: Boolean,
+      default: false,
+    },
+
+    project: { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null },
+    tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Task" }],
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    viewedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    comments: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      }
-    ],
-    likes: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        userName: String,
+        text: String,
+        type: { type: String, default: "note" },
+        solvedIndicator: { type: Boolean, default: false },
+        createdAt: { type: Date, default: Date.now },
       },
     ],
-    comments: [resourceCommentSchema],
+    usageMetadata: [
+      {
+        text: String,
+        contextType: { type: String, default: "other" },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+
+    linkedTasks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Task" }],
+    linkedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
+    linkedDiscussions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Discussion" }],
+    codeSnippet: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Indexes for search performance
 resourceSchema.index({ title: "text", description: "text", tags: "text" });
 
 const Resource = mongoose.model("Resource", resourceSchema);
+
 export default Resource;

@@ -1,4 +1,4 @@
-﻿import mongoose from "mongoose";
+import mongoose from "mongoose";
 
 const projectSchema = new mongoose.Schema(
   {
@@ -15,7 +15,7 @@ const projectSchema = new mongoose.Schema(
 
     workspace: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "workspace",
+      ref: "Workspace",
       required: true,
     },
 
@@ -34,9 +34,72 @@ const projectSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["active", "completed"],
-      default: "active",
+      enum: ["Planning", "Active", "In Review", "Released", "Archived"],
+      default: "Active",
     },
+
+    roadmap: {
+      type: String,
+      default: "",
+    },
+
+    milestones: [
+      {
+        name: { type: String, required: true },
+        description: { type: String, default: "" },
+        dueDate: { type: Date, default: null },
+        status: {
+          type: String,
+          enum: ["Not Started", "In Progress", "Completed"],
+          default: "Not Started",
+        },
+        progress: { type: Number, default: 0 },
+      },
+    ],
+
+    releases: [
+      {
+        version: { type: String, required: true },
+        name: { type: String, required: true },
+        description: { type: String, default: "" },
+        releaseDate: { type: Date, default: null },
+        status: {
+          type: String,
+          enum: ["Planning", "Beta", "Released"],
+          default: "Planning",
+        },
+        features: { type: [String], default: [] },
+      },
+    ],
+
+    startDate: {
+      type: Date,
+      default: null,
+    },
+
+    endDate: {
+      type: Date,
+      default: null,
+    },
+
+    progress: {
+      type: Number,
+      default: 0,
+    },
+
+    linkedResources: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Resource",
+      }
+    ],
+
+    linkedDiscussions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Discussion",
+      }
+    ],
   },
   {
     timestamps: true,

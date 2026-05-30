@@ -145,3 +145,41 @@ export const requireSprintWrite = async (req, res, next) => {
     next(err);
   }
 };
+
+export const requireProjectWriteByParam = (param = "projectId") => async (req, res, next) => {
+  try {
+    const project = await Project.findById(req.params[param]).select("workspace");
+    if (!project) return res.status(404).json({ success: false, message: "Project not found" });
+    const allowed = await hasWorkspaceRole(project.workspace, req.user._id, WRITE_ROLES);
+    if (!allowed) return res.status(403).json({ success: false, message: "Read-only role cannot modify project data" });
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
+import Wiki from "../models/Wiki.js";
+
+export const requireWikiReadByParam = (param = "wikiId") => async (req, res, next) => {
+  try {
+    const wiki = await Wiki.findById(req.params[param]).select("workspace");
+    if (!wiki) return res.status(404).json({ success: false, message: "Wiki not found" });
+    const allowed = await hasWorkspaceRole(wiki.workspace, req.user._id, READ_ROLES);
+    if (!allowed) return res.status(403).json({ success: false, message: "Access denied to wiki" });
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const requireWikiWriteByParam = (param = "wikiId") => async (req, res, next) => {
+  try {
+    const wiki = await Wiki.findById(req.params[param]).select("workspace");
+    if (!wiki) return res.status(404).json({ success: false, message: "Wiki not found" });
+    const allowed = await hasWorkspaceRole(wiki.workspace, req.user._id, WRITE_ROLES);
+    if (!allowed) return res.status(403).json({ success: false, message: "Viewers cannot modify wiki" });
+    next();
+  } catch (err) {
+    next(err);
+  }
+};

@@ -198,11 +198,19 @@ export const runCodeReview = async (req, res, next) => {
     if (!code) return res.status(400).json({ success: false, message: "Code block is required" });
 
     const fallbackReview = {
-      bugs: "Review of socket state variables: ensure volatile events are caught to prevent memory leak.",
-      performance: "Debounce the cursor broadcast handler. Broadcasting mousemove continuously inside the event loop creates heavy CPU overhead.",
-      security: "Sanitize the room parameter inside the socket join event. Prevents server path injection attacks.",
-      readability: "Split the massive socket middleware function into smaller helper classes.",
-      overallScore: 82,
+      securityReview: "Critical: Hardcoded secrets detection not implemented. Lacking CSRF protection.",
+      performanceReview: "O(n^2) complexity in nested loops. Redundant database queries found in the payload resolution.",
+      maintainabilityReview: "High cyclomatic complexity (score 42). Recommend breaking down giant middleware into separate handlers.",
+      architectureReview: "Monolithic structure limits scalability. Strongly consider moving the notification logic to an async queue.",
+      riskLevel: "High",
+      suggestions: ["Add rate limiting middleware", "Move async logic to workers", "Implement redis caching"],
+      severityScoring: {
+        security: 85,
+        performance: 60,
+        maintainability: 45,
+        architecture: 50
+      },
+      overallScore: 65,
     };
 
     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "your_gemini_api_key_here") {
@@ -221,19 +229,29 @@ You are the Collabrix AI Senior Code Auditor. Review this ${language || "JavaScr
 ${code}
 
 Perform a rigorous engineering review analyzing:
-1. Critical bugs or edge cases.
-2. Performance optimization suggestions.
-3. Security flaws or injection vectors.
-4. Readability and clean-code advice.
-5. Overall score out of 100.
+1. Security Review: Any vulnerabilities, injections, or insecure patterns.
+2. Performance Review: O(n) complexities, bottlenecks, or memory leaks.
+3. Maintainability Review: Clean code, SOLID principles, cyclomatic complexity.
+4. Architecture Review: Design patterns and system architecture implications.
+5. Risk Level: "Low", "Medium", "High", or "Critical".
+6. Suggestions: Array of 3 short, actionable suggestions.
+7. Severity Scoring: A JSON object with 0-100 scores for security, performance, maintainability, architecture (lower is worse).
 
 Return ONLY a raw JSON object (no markdown, no backticks):
 {
-  "bugs": "...",
-  "performance": "...",
-  "security": "...",
-  "readability": "...",
-  "overallScore": 85
+  "securityReview": "...",
+  "performanceReview": "...",
+  "maintainabilityReview": "...",
+  "architectureReview": "...",
+  "riskLevel": "Medium",
+  "suggestions": ["...", "...", "..."],
+  "severityScoring": {
+    "security": 90,
+    "performance": 80,
+    "maintainability": 70,
+    "architecture": 85
+  },
+  "overallScore": 81
 }
 `;
 
@@ -253,11 +271,19 @@ Return ONLY a raw JSON object (no markdown, no backticks):
       success: true,
       isFallback: true,
       review: {
-        bugs: "Review of socket state variables: ensure volatile events are caught to prevent memory leak.",
-        performance: "Debounce the cursor broadcast handler. Broadcasting mousemove continuously inside the event loop creates heavy CPU overhead.",
-        security: "Sanitize the room parameter inside the socket join event. Prevents server path injection attacks.",
-        readability: "Split the massive socket middleware function into smaller helper classes.",
-        overallScore: 82,
+        securityReview: "Medium Risk. Missing Rate Limiting detected on the route.",
+        performanceReview: "High latency potential. Consider adding an Express Rate Limit Middleware.",
+        maintainabilityReview: "Readable but lacks comprehensive JSDoc comments.",
+        architectureReview: "Standard MVC pattern, easily testable.",
+        riskLevel: "Medium",
+        suggestions: ["Add Express Rate Limit Middleware", "Add Redis caching", "Abstract into service layer"],
+        severityScoring: {
+          security: 70,
+          performance: 65,
+          maintainability: 80,
+          architecture: 80
+        },
+        overallScore: 75,
       },
     });
   }

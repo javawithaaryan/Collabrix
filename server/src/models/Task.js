@@ -30,6 +30,32 @@ const taskSchema = new mongoose.Schema(
       default: "medium",
     },
 
+    type: {
+      type: String,
+      enum: ["Epic", "Story", "Task"],
+      default: "Task",
+    },
+
+    epic: {
+      type: String,
+      default: "",
+    },
+
+    complexity: {
+      type: String,
+      default: "",
+    },
+
+    estimates: {
+      type: String,
+      default: "",
+    },
+
+    acceptanceCriteria: {
+      type: [String],
+      default: [],
+    },
+
     status: {
       type: String,
       enum: ["todo", "in-progress", "done"],
@@ -93,6 +119,13 @@ const taskSchema = new mongoose.Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Resource",
+      }
+    ],
+
+    discussions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Discussion",
       }
     ],
 

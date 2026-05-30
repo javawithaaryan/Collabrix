@@ -133,24 +133,45 @@ export default function CodeReview() {
                   </div>
 
                   <div className="flex flex-col gap-4 text-xs font-sans">
-                    <div>
-                      <span className="text-[10px] font-bold font-mono text-red-400 block uppercase tracking-wider mb-1">🐛 Bugs & Edge Cases</span>
-                      <p className="text-zinc-300 bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 leading-relaxed">{review.bugs}</p>
+                    <div className="grid grid-cols-2 gap-4 mb-2">
+                      <div className="bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 flex flex-col items-center justify-center">
+                        <span className="text-[10px] font-bold font-mono text-zinc-500 uppercase">Risk Level</span>
+                        <span className={`text-lg font-black font-mono mt-1 ${review.riskLevel === 'Critical' || review.riskLevel === 'High' ? 'text-red-500' : review.riskLevel === 'Medium' ? 'text-amber-500' : 'text-emerald-500'}`}>{review.riskLevel}</span>
+                      </div>
+                      <div className="bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 flex flex-col justify-center gap-1">
+                         <span className="text-[10px] font-bold font-mono text-zinc-500 uppercase text-center mb-1">Severity Scores</span>
+                         <div className="flex justify-between items-center px-2 text-[9px] font-mono"><span className="text-rose-400">Security</span> <span>{review.severityScoring?.security}/100</span></div>
+                         <div className="flex justify-between items-center px-2 text-[9px] font-mono"><span className="text-amber-400">Perf</span> <span>{review.severityScoring?.performance}/100</span></div>
+                         <div className="flex justify-between items-center px-2 text-[9px] font-mono"><span className="text-blue-400">Maintain</span> <span>{review.severityScoring?.maintainability}/100</span></div>
+                         <div className="flex justify-between items-center px-2 text-[9px] font-mono"><span className="text-violet-400">Arch</span> <span>{review.severityScoring?.architecture}/100</span></div>
+                      </div>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold font-mono text-amber-400 block uppercase tracking-wider mb-1">⚡ Performance & Sockets</span>
-                      <p className="text-zinc-300 bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 leading-relaxed">{review.performance}</p>
+                      <span className="text-[10px] font-bold font-mono text-rose-500 block uppercase tracking-wider mb-1">🔒 Security Review</span>
+                      <p className="text-zinc-300 bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 leading-relaxed">{review.securityReview}</p>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold font-mono text-rose-500 block uppercase tracking-wider mb-1">🔒 Security Vulnerabilities</span>
-                      <p className="text-zinc-300 bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 leading-relaxed">{review.security}</p>
+                      <span className="text-[10px] font-bold font-mono text-amber-400 block uppercase tracking-wider mb-1">⚡ Performance Review</span>
+                      <p className="text-zinc-300 bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 leading-relaxed">{review.performanceReview}</p>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold font-mono text-violet-400 block uppercase tracking-wider mb-1">📖 Readability & Structure</span>
-                      <p className="text-zinc-300 bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 leading-relaxed">{review.readability}</p>
+                      <span className="text-[10px] font-bold font-mono text-blue-400 block uppercase tracking-wider mb-1">📖 Maintainability Review</span>
+                      <p className="text-zinc-300 bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 leading-relaxed">{review.maintainabilityReview}</p>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold font-mono text-violet-400 block uppercase tracking-wider mb-1">🏗 Architecture Review</span>
+                      <p className="text-zinc-300 bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 leading-relaxed">{review.architectureReview}</p>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold font-mono text-emerald-400 block uppercase tracking-wider mb-1">💡 Actionable Suggestions</span>
+                      <ul className="text-zinc-300 bg-zinc-900/40 p-3 rounded-xl border border-zinc-900 leading-relaxed list-disc list-inside">
+                        {review.suggestions?.map((s, i) => <li key={i}>{s}</li>)}
+                      </ul>
                     </div>
                   </div>
                 </div>

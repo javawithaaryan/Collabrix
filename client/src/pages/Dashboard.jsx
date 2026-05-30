@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../lib/axios";
 import Skeleton from "../components/ui/Skeleton";
 import NotificationBell from "../components/notifications/NotificationBell";
+import { navigateToWorkspace } from "../utils/workspaceRoutes";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -164,8 +165,7 @@ const Dashboard = () => {
                     key={workspace._id}
                     workspace={workspace}
                     onClick={() => {
-                      localStorage.setItem("activeWorkspaceId", workspace._id);
-                      navigate(`/workspace/${workspace._id}/dashboard`);
+                      navigateToWorkspace(navigate, workspace._id);
                     }}
                     colorIndex={idx}
                   />

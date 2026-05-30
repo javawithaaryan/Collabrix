@@ -5,6 +5,7 @@ import { useSocket } from "../../context/SocketContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { useAuth } from "../../context/AuthContext";
 import CommandPalette from "./CommandPalette";
+import { isObjectId, navigateToWorkspace, workspacePath } from "../../utils/workspaceRoutes";
 
 export default function Topbar() {
   const { id: workspaceId } = useParams();
@@ -56,7 +57,7 @@ export default function Topbar() {
 
   const handleWorkspaceSelect = (id) => {
     switchWorkspace(id);
-    navigate(`/workspace/${id}/dashboard`);
+    navigateToWorkspace(navigate, id);
     setShowWorkspaceDropdown(false);
   };
 
@@ -65,14 +66,15 @@ export default function Topbar() {
     setShowNotifDropdown(false);
     
     // Deep linking
-    if (notif.projectId) {
-      let path = `/workspace/${workspaceId}/kanban?project=${notif.projectId}`;
+    const targetWorkspaceId = isObjectId(notif.workspaceId) ? notif.workspaceId : workspaceId;
+    if (notif.projectId && isObjectId(targetWorkspaceId)) {
+      let path = workspacePath(targetWorkspaceId, `kanban?project=${notif.projectId}`);
       if (notif.taskId) {
         path += `&task=${notif.taskId}`;
       }
       navigate(path);
-    } else {
-      navigate(`/workspace/${workspaceId}/notifications`);
+    } else if (isObjectId(targetWorkspaceId)) {
+      navigate(workspacePath(targetWorkspaceId, "notifications"));
     }
   };
 
@@ -236,7 +238,8 @@ export default function Topbar() {
               <div className="border-t border-slate-800 pt-2 text-center mt-1">
                 <button
                   onClick={() => {
-                    navigate(`/workspace/${workspaceId}/notifications`);
+                    const path = workspacePath(workspaceId, "notifications");
+                    if (path) navigate(path);
                     setShowNotifDropdown(false);
                   }}
                   className="text-xs font-semibold text-slate-400 hover:text-white transition-all w-full py-1 rounded hover:bg-slate-800/40"
@@ -275,7 +278,8 @@ export default function Topbar() {
               </div>
               <button
                 onClick={() => {
-                  navigate(`/workspace/${workspaceId}/settings`);
+                  const path = workspacePath(workspaceId, "settings");
+                  if (path) navigate(path);
                   setShowProfileDropdown(false);
                 }}
                 className="w-full flex items-center px-2.5 py-2 rounded-lg text-left text-xs text-slate-300 hover:text-white transition-all hover:bg-slate-800/80"

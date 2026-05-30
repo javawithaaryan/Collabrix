@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useNotifications } from "../context/NotificationContext";
+import { isObjectId, workspacePath } from "../utils/workspaceRoutes";
 
 export default function Notifications() {
   const { id: workspaceId } = useParams();
@@ -17,8 +18,9 @@ export default function Notifications() {
     markAsRead(notif._id);
     
     // Deep linking logic
-    if (notif.projectId) {
-      let path = `/workspace/${workspaceId}/kanban?project=${notif.projectId}`;
+    const targetWorkspaceId = isObjectId(notif.workspaceId) ? notif.workspaceId : workspaceId;
+    if (notif.projectId && isObjectId(targetWorkspaceId)) {
+      let path = workspacePath(targetWorkspaceId, `kanban?project=${notif.projectId}`);
       if (notif.taskId) {
         path += `&task=${notif.taskId}`;
       }

@@ -84,6 +84,11 @@ export default function SprintPlanner() {
       setSprint(res.data);
       setIsFallback(res.data.isFallback || false);
       setSelectedTab("overview");
+
+      if (res.data.createdTasks > 0) {
+        triggerToast(`Sprint populated! ${res.data.createdTasks} tasks added to board.`, "🚀");
+        navigate(`/workspace/${workspaceId}/kanban?project=${selectedProjectId}`);
+      }
     } catch (err) {
       setError("Sprint generation failed. Please try again.");
       console.error(err);

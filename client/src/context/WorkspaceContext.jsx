@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { workspaceService } from "../services/workspace.service";
 import { useAuth } from "./AuthContext";
+import { isObjectId } from "../utils/workspaceRoutes";
 
 const WorkspaceContext = createContext();
 
@@ -23,7 +24,10 @@ export const WorkspaceProvider = ({ children }) => {
   }, [user]);
 
   const loadWorkspaceDetails = useCallback(async (id) => {
-    if (!id) return;
+    if (!isObjectId(id)) {
+      console.error("[workspace] Refusing to load invalid workspace id:", id);
+      return;
+    }
     setLoading(true);
     try {
       const details = await workspaceService.getWorkspaceDetails(id);
@@ -53,6 +57,10 @@ export const WorkspaceProvider = ({ children }) => {
       setActiveWorkspaceId(null);
       setActiveWorkspace(null);
       localStorage.removeItem("activeWorkspaceId");
+      return;
+    }
+    if (!isObjectId(id)) {
+      console.error("[workspace] Refusing to switch to invalid workspace id:", id);
       return;
     }
     localStorage.setItem("activeWorkspaceId", id);

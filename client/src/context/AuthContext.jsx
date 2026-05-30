@@ -4,19 +4,17 @@
   useEffect,
   useState,
 } from "react";
-
 import api from "../lib/axios";
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token");
-
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
     const fetchUser = async () => {
       if (!token) {
         setLoading(false);
@@ -32,14 +30,16 @@ export const AuthProvider = ({ children }) => {
 
         setUser(response.data);
       } catch (error) {
+        console.error("Auth Error:", error);
         localStorage.removeItem("token");
+        setUser(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchUser();
-  }, [token]);
+  }, []);
 
   const login = async (formData) => {
     const response = await api.post(
@@ -53,6 +53,8 @@ export const AuthProvider = ({ children }) => {
     );
 
     setUser(response.data.user);
+
+    return response.data;
   };
 
   const register = async (formData) => {
@@ -67,29 +69,44 @@ export const AuthProvider = ({ children }) => {
     );
 
     setUser(response.data.user);
+
+    return response.data;
   };
 
   const logout = () => {
     localStorage.removeItem("token");
-
     setUser(null);
   };
 
+  const value = {
+    user,
+    loading,
+    login,
+    register,
+    logout,
+    setUser,
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        login,
-        register,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
-  return useContext(AuthContext);
+export const useAuthContext = () => {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error(
+      "useAuthContext must be used within AuthProvider"
+    );
+  }
+
+  return context;
 };
+
+// Backwards-compatible alias: some files import { useAuth } from this module
+export const useAuth = useAuthContext;
+
+export default AuthContext;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { workspaceService } from "../services/workspace.service";
 import { useNotifications } from "../context/NotificationContext";
@@ -7,6 +7,7 @@ import { useNotifications } from "../context/NotificationContext";
 export default function Settings() {
   const { id: workspaceId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { activeWorkspace, role, can, fetchWorkspaces, loadWorkspaceDetails } = useWorkspace();
   const { triggerToast } = useNotifications();
 
@@ -18,6 +19,11 @@ export default function Settings() {
   const [invites, setInvites] = useState([]);
   const [loadingInvites, setLoadingInvites] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const tab = new URLSearchParams(location.search).get("tab");
+    if (tab === "members") setActiveTab("members");
+  }, [location.search]);
 
   useEffect(() => {
     if (activeWorkspace) {

@@ -16,8 +16,12 @@ export const workspaceService = {
     return res.data;
   },
 
-  updateWorkspace: async (workspaceId, name, description) => {
-    const res = await api.put(`/workspaces/${workspaceId}`, { name, description });
+  updateWorkspace: async (workspaceId, nameOrPayload, description) => {
+    const payload =
+      typeof nameOrPayload === "object"
+        ? nameOrPayload
+        : { name: nameOrPayload, description };
+    const res = await api.put(`/workspaces/${workspaceId}`, payload);
     return res.data;
   },
 
@@ -37,6 +41,11 @@ export const workspaceService = {
   },
 
   getInvites: async (workspaceId) => {
+    const res = await api.get(`/workspaces/${workspaceId}/invites`);
+    return res.data;
+  },
+
+  getPendingInvites: async (workspaceId) => {
     const res = await api.get(`/workspaces/${workspaceId}/invites`);
     return res.data;
   },

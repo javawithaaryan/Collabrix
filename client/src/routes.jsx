@@ -13,32 +13,39 @@ import PageLoader from "./components/ui/PageLoader";
 |--------------------------------------------------------------------------
 */
 
+// Public Pages
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
+const JoinWorkspace = lazy(() => import("./pages/JoinWorkspace"));
 
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Workspace = lazy(() => import("./pages/Workspace"));
+// Global Pages (after login)
+const GlobalDashboard = lazy(() => import("./pages/GlobalDashboard"));
+const MyWorkspaces = lazy(() => import("./pages/MyWorkspaces"));
+const GlobalResourceHub = lazy(() => import("./pages/GlobalResourceHub"));
+const EngineersSpace = lazy(() => import("./pages/EngineersSpace"));
+const Insights = lazy(() => import("./pages/Insights"));
+const Account = lazy(() => import("./pages/Account"));
 
+// Workspace Pages
+const WorkspaceDashboard = lazy(() => import("./pages/WorkspaceDashboard"));
+const Projects = lazy(() => import("./pages/Projects"));
 const Project = lazy(() => import("./pages/Project"));
-const Tasks = lazy(() => import("./pages/Tasks"));
 const Chat = lazy(() => import("./pages/Chat"));
-
 const ResourceHub = lazy(() => import("./pages/ResourceHub"));
-const Pulse = lazy(() => import("./pages/Pulse"));
 const Wiki = lazy(() => import("./pages/Wiki"));
 const Snippets = lazy(() => import("./pages/Snippets"));
-
 const CodeReview = lazy(() => import("./pages/CodeReview"));
 const SprintPlanner = lazy(() => import("./pages/SprintPlanner"));
-
-const Notifications = lazy(() => import("./pages/Notifications"));
+const WorkspaceSettings = lazy(() => import("./pages/Settings"));
+const Tasks = lazy(() => import("./pages/Tasks"));
+const AICommandCenter = lazy(() => import("./pages/AICommandCenter"));
+const Pulse = lazy(() => import("./pages/Pulse"));
 const Activity = lazy(() => import("./pages/Activity"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 
+// Legacy Pages (to be removed)
 const Billing = lazy(() => import("./pages/Billing"));
-const Settings = lazy(() => import("./pages/Settings"));
-
-const JoinWorkspace = lazy(() => import("./pages/JoinWorkspace"));
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -89,16 +96,60 @@ const router = createBrowserRouter([
 
   /*
   |--------------------------------------------------------------------------
-  | Main Dashboard
+  | Global Pages (After Login)
   |--------------------------------------------------------------------------
   */
 
   {
     path: "/dashboard",
-
     element: (
       <ProtectedRoute>
-        {renderWithLoader(<Dashboard />)}
+        {renderWithLoader(<GlobalDashboard />)}
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    path: "/my-workspaces",
+    element: (
+      <ProtectedRoute>
+        {renderWithLoader(<MyWorkspaces />)}
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    path: "/community",
+    element: (
+      <ProtectedRoute>
+        {renderWithLoader(<EngineersSpace />)}
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    path: "/resources",
+    element: (
+      <ProtectedRoute>
+        {renderWithLoader(<GlobalResourceHub />)}
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    path: "/insights",
+    element: (
+      <ProtectedRoute>
+        {renderWithLoader(<Insights />)}
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    path: "/account",
+    element: (
+      <ProtectedRoute>
+        {renderWithLoader(<Account />)}
       </ProtectedRoute>
     ),
   },
@@ -132,18 +183,18 @@ const router = createBrowserRouter([
 
       /*
       |--------------------------------------------------------------------------
-      | Core Workspace Pages
+      | Workspace Pages
       |--------------------------------------------------------------------------
       */
 
       {
         path: "dashboard",
-        element: renderWithLoader(<Workspace />),
+        element: renderWithLoader(<WorkspaceDashboard />),
       },
 
       {
         path: "projects",
-        element: renderWithLoader(<Workspace />),
+        element: renderWithLoader(<Projects />),
       },
 
       {
@@ -157,11 +208,6 @@ const router = createBrowserRouter([
       },
 
       {
-        path: "tasks",
-        element: renderWithLoader(<Tasks />),
-      },
-
-      {
         path: "chat",
         element: renderWithLoader(<Chat />),
       },
@@ -171,20 +217,14 @@ const router = createBrowserRouter([
         element: renderWithLoader(<Chat />),
       },
 
-      /*
-      |--------------------------------------------------------------------------
-      | Knowledge & Resources
-      |--------------------------------------------------------------------------
-      */
+      {
+        path: "pulse",
+        element: renderWithLoader(<Pulse />),
+      },
 
       {
         path: "resources",
         element: renderWithLoader(<ResourceHub />),
-      },
-
-      {
-        path: "pulse",
-        element: renderWithLoader(<Pulse />),
       },
 
       {
@@ -197,12 +237,6 @@ const router = createBrowserRouter([
         element: renderWithLoader(<Snippets />),
       },
 
-      /*
-      |--------------------------------------------------------------------------
-      | AI & Collaboration
-      |--------------------------------------------------------------------------
-      */
-
       {
         path: "code-review",
         element: renderWithLoader(<CodeReview />),
@@ -214,8 +248,13 @@ const router = createBrowserRouter([
       },
 
       {
-        path: "notifications",
-        element: renderWithLoader(<Notifications />),
+        path: "tasks",
+        element: renderWithLoader(<Tasks />),
+      },
+
+      {
+        path: "ai",
+        element: renderWithLoader(<AICommandCenter />),
       },
 
       {
@@ -223,11 +262,10 @@ const router = createBrowserRouter([
         element: renderWithLoader(<Activity />),
       },
 
-      /*
-      |--------------------------------------------------------------------------
-      | Workspace Administration
-      |--------------------------------------------------------------------------
-      */
+      {
+        path: "notifications",
+        element: renderWithLoader(<Notifications />),
+      },
 
       {
         path: "billing",
@@ -236,7 +274,7 @@ const router = createBrowserRouter([
 
       {
         path: "settings",
-        element: renderWithLoader(<Settings />),
+        element: renderWithLoader(<WorkspaceSettings />),
       },
     ],
   },

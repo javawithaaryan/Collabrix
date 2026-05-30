@@ -23,6 +23,7 @@ import {
 const router = express.Router();
 
 router.post("/extract", authMiddleware, extractUrlMetadata);
+router.post("/fetch-metadata", authMiddleware, extractUrlMetadata);
 router.post("/", authMiddleware, requireWorkspaceWriteByBody("workspaceId"), createResource);
 router.get("/workspace/:workspaceId", authMiddleware, requireWorkspaceReadByParam("workspaceId"), getResources);
 router.put("/:id", authMiddleware, requireResourceWriteByParam("id"), updateResource);

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../lib/axios";
+import { navigateToWorkspace } from "../utils/workspaceRoutes";
 
 export default function JoinWorkspace() {
   const { token } = useParams();
@@ -42,7 +43,7 @@ export default function JoinWorkspace() {
       const res = await api.post(`/workspaces/join/${token}`);
       setSuccess(true);
       setTimeout(() => {
-        navigate(`/workspace/${res.data.workspace._id}`);
+        navigateToWorkspace(navigate, res.data.workspace._id);
       }, 1500);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to join workspace");

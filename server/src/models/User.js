@@ -26,6 +26,37 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    bio: {
+      type: String,
+      default: "",
+    },
+
+    skills: {
+      type: [String],
+      default: [],
+    },
+
+    techStack: {
+      type: [String],
+      default: [],
+    },
+
+    github: {
+      type: String,
+      default: "",
+    },
+
+    linkedin: {
+      type: String,
+      default: "",
+    },
+
+    shipIndex: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ShipIndex",
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -121,15 +121,50 @@ const Sidebar = () => {
                 />
               </div>
 
-              {/* Engineering Section */}
+              {/* AI Section */}
               <div className="flex flex-col gap-0.5">
-                <span className="px-3 text-[9px] font-bold text-zinc-550 uppercase tracking-widest mb-1.5 font-mono">Engineering</span>
+                <span className="px-3 text-[9px] font-bold text-zinc-550 uppercase tracking-widest mb-1.5 font-mono">AI</span>
+                <NavLink
+                  to={`/workspace/${activeWorkspaceId}/ai`}
+                  icon="✨"
+                  label="AI Command Center"
+                  active={isActive(`/workspace/${activeWorkspaceId}/ai`)}
+                  badge="new"
+                />
+                <NavLink
+                  to={`/workspace/${activeWorkspaceId}/sprint-planner`}
+                  icon="🎯"
+                  label="Sprint Planner"
+                  active={isActive(`/workspace/${activeWorkspaceId}/sprint-planner`)}
+                />
+              </div>
+
+              {/* Collaboration Section */}
+              <div className="flex flex-col gap-0.5">
+                <span className="px-3 text-[9px] font-bold text-zinc-550 uppercase tracking-widest mb-1.5 font-mono">Collaborate</span>
+                <NavLink
+                  to={`/workspace/${activeWorkspaceId}/projects`}
+                  icon="🗂"
+                  label="Projects"
+                  active={isActive(`/workspace/${activeWorkspaceId}/projects`)}
+                />
+                <NavLink
+                  to={`/workspace/${activeWorkspaceId}/chat`}
+                  icon="💬"
+                  label="Team Chat"
+                  active={isActive(`/workspace/${activeWorkspaceId}/chat`)}
+                />
                 <NavLink
                   to={`/workspace/${activeWorkspaceId}/wiki`}
                   icon="📖"
                   label="Wiki"
                   active={isActive(`/workspace/${activeWorkspaceId}/wiki`)}
                 />
+              </div>
+
+              {/* Engineering Section */}
+              <div className="flex flex-col gap-0.5">
+                <span className="px-3 text-[9px] font-bold text-zinc-550 uppercase tracking-widest mb-1.5 font-mono">Engineering</span>
                 <NavLink
                   to={`/workspace/${activeWorkspaceId}/snippets`}
                   icon="💻"
@@ -197,7 +232,7 @@ const Sidebar = () => {
   );
 };
 
-function NavLink({ to, icon, label, active }) {
+function NavLink({ to, icon, label, active, badge }) {
   return (
     <Link
       to={to}
@@ -214,7 +249,12 @@ function NavLink({ to, icon, label, active }) {
       <span className={`text-sm transition-transform duration-200 group-hover:scale-110 ${active ? "opacity-100" : "opacity-75 group-hover:opacity-100"}`}>
         {icon}
       </span>
-      <span>{label}</span>
+      <span className="flex-1">{label}</span>
+      {badge && (
+        <span className="text-[8px] bg-violet-900/60 border border-violet-700 text-violet-300 px-1.5 py-0.5 rounded-full font-mono font-bold">
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }
