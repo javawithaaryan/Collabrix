@@ -535,7 +535,7 @@ export default function ResourceHub() {
                       setActiveType(type);
                       setPage(1);
                     }}
-                    className={`text-[9px] font-extrabold uppercase px-2.5 py-1 rounded transition capitalize ${
+                    className={`text-[9px] font-extrabold uppercase px-2.5 py-1 rounded transition ${
                       activeType === type
                         ? "bg-white text-black font-extrabold"
                         : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
