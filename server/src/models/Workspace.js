@@ -1,98 +1,46 @@
-﻿import mongoose from "mongoose";
+﻿const mongoose = require('mongoose');
 
-const memberSchema = new mongoose.Schema(
-  {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    role: {
-      type: String,
-      enum: ["owner", "admin", "member", "viewer"],
-      default: "member",
-    },
-    joinedAt: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-  { _id: false }
-);
+const WorkspaceSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  description: { type: String },
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  members: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    role: { type: String, enum: ['Admin', 'Member', 'Viewer'], default: 'Member' }
+  }],
+  projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }]
+}, { timestamps: true });
 
-const inviteSchema = new mongoose.Schema(
-  {
-    token: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    email: {
-      type: String,
-      lowercase: true,
-      trim: true,
-    },
-    invitedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-    role: {
-      type: String,
-      enum: ["admin", "member", "viewer"],
-      default: "member",
-    },
-    status: {
-      type: String,
-      enum: ["pending", "accepted", "expired"],
-      default: "pending",
-    },
-    expiresAt: {
-      type: Date,
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-  { _id: true }
-);
+// Cascade delete middleware when a workspace is removed
+WorkspaceSchema.pre('cleanDelete', async function(next) {
+  try {
+    const projectIds = this.projects;
+    
+    // Delete all comments, tasks, sprints linked to projects inside this workspace
+    if (projectIds && projectIds.length > 0) {
+      const Sprint = mongoose.model('Sprint');
+      const Task = mongoose.model('Task');
+      const Comment = mongoose.model('Comment');
+      
+      const sprints = await Sprint.find({ project: { $in: projectIds } });
+      const sprintIds = sprints.map(s => s._id);
 
-const workspaceSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-    members: [memberSchema],
-    invites: [inviteSchema],
-  },
-  { timestamps: true }
-);
+      const tasks = await Task.find({ project: { $in: projectIds } });
+      const taskIds = tasks.map(t => t._id);
 
-workspaceSchema.methods.isMember = function (userId) {
-  return this.members.some(
-    (member) => member.user.toString() === userId.toString()
-  );
-};
+      if (taskIds.length > 0) {
+        await Comment.deleteMany({ task: { $in: taskIds } });
+        await Task.deleteMany({ _id: { $in: taskIds } });
+      }
+      if (sprintIds.length > 0) {
+        await Sprint.deleteMany({ _id: { $in: sprintIds } });
+      }
+      await mongoose.model('Project').deleteMany({ _id: { $in: projectIds } });
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
-workspaceSchema.methods.getMemberRole = function (userId) {
-  const member = this.members.find(
-    (member) => member.user.toString() === userId.toString()
-  );
-
-  return member ? member.role : null;
-};
-
-const Workspace = mongoose.model("Workspace", workspaceSchema);
-
-export default Workspace;
+module.exports = mongoose.model('Workspace', WorkspaceSchema);
